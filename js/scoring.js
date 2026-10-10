@@ -1,0 +1,44 @@
+// Indoor 10-ring scoring. X counts as 10 (and is tracked separately for
+// tie-breaks); M is a miss worth 0.
+
+export const ARROW_VALUES = ['X', '10', '9', '8', '7', '6', '5', '4', '3', '2', '1', 'M'];
+
+export function arrowScore(value) {
+  if (value === 'X') return 10;
+  if (value === 'M') return 0;
+  return Number(value);
+}
+
+export function endTotal(end) {
+  return end.reduce((sum, a) => sum + arrowScore(a), 0);
+}
+
+export function sessionStats(session) {
+  const arrows = session.ends.flat();
+  const total = arrows.reduce((sum, a) => sum + arrowScore(a), 0);
+  const completeEnds = session.ends.filter((e) => e.length === session.arrowsPerEnd);
+  return {
+    ends: completeEnds.length,
+    arrows: arrows.length,
+    total,
+    avgArrow: arrows.length ? total / arrows.length : null,
+    avgEnd: completeEnds.length ? completeEnds.reduce((s, e) => s + endTotal(e), 0) / completeEnds.length : null,
+    xs: arrows.filter((a) => a === 'X').length,
+    tens: arrows.filter((a) => a === 'X' || a === '10').length,
+    misses: arrows.filter((a) => a === 'M').length,
+  };
+}
+
+// Target face ring colour for an arrow value, used for the keypad and chips.
+export function ringClass(value) {
+  if (value === 'X' || value === '10' || value === '9') return 'ring-gold';
+  if (value === '8' || value === '7') return 'ring-red';
+  if (value === '6' || value === '5') return 'ring-blue';
+  if (value === '4' || value === '3') return 'ring-black';
+  if (value === '2' || value === '1') return 'ring-white';
+  return 'ring-miss';
+}
+
+export function fmt(n, digits = 2) {
+  return n === null || n === undefined ? '–' : n.toFixed(digits);
+}
