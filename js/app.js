@@ -1,6 +1,7 @@
 import { storage } from './storage.js';
 import { ARROW_VALUES, endTotal, sessionStats, ringClass, fmt } from './scoring.js';
 import { renderLineChart } from './chart.js';
+import { initTheme } from './theme.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -248,6 +249,7 @@ function buildKeypad() {
 }
 
 async function init() {
+  initTheme($('#theme-toggle'));
   buildKeypad();
 
   const activeId = await storage.getActiveSessionId();
