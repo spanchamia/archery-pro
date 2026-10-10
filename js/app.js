@@ -1,7 +1,7 @@
 import { storage } from './storage.js';
 import { ARROW_VALUES, endTotal, sessionStats, ringClass, fmt } from './scoring.js';
 import { renderLineChart } from './chart.js';
-import { initTheme } from './theme.js';
+import { initTheme } from './theme.js?v=3';
 
 const $ = (sel) => document.querySelector(sel);
 

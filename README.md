@@ -12,7 +12,7 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 - Live session stats: average per arrow, average per end, total, ends shot, 10s and Xs.
 - Progress tab with a chart of average arrow score per session, overall stats and a list of all sessions you can reopen or delete.
 - Export and import a JSON backup.
-- Light and dark mode switch in the header (Auto follows your device setting; your choice is remembered).
+- Light / dark mode switch in the header. It follows your device setting until you tap it, then remembers your choice.
 - Keyboard scoring on desktop: `x`, `1`–`9`, `0` for 10, `m` for miss, Backspace to undo.
 
 ## Running locally

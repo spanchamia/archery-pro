@@ -1,43 +1,36 @@
-// Light / dark mode switch. "auto" follows the device setting; an explicit
-// choice is remembered in this browser.
+// Light / dark mode switch. Until the user picks one, the app follows the
+// device setting; once they tap the switch, their choice is remembered in
+// this browser.
 
 const KEY = 'archeryPro.theme';
-const ORDER = ['auto', 'light', 'dark'];
-const LABELS = { auto: '🌗 Auto', light: '☀️ Light', dark: '🌙 Dark' };
+const media = matchMedia('(prefers-color-scheme: dark)');
 
-function savedTheme() {
-  try {
-    const t = localStorage.getItem(KEY);
-    return ORDER.includes(t) ? t : 'auto';
-  } catch {
-    return 'auto';
-  }
-}
+let chosen = null;
+try {
+  const t = localStorage.getItem(KEY);
+  if (t === 'light' || t === 'dark') chosen = t;
+} catch {}
 
-function applyTheme(theme, button) {
-  if (theme === 'auto') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = theme;
-  button.textContent = LABELS[theme];
-  button.setAttribute('aria-label', `Theme: ${theme}. Tap to change.`);
-  button.title = 'Switch between automatic, light and dark mode';
-  const dark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+const currentTheme = () => chosen || (media.matches ? 'dark' : 'light');
+
+function applyTheme(button) {
+  const dark = currentTheme() === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  button.textContent = dark ? '🌙 Dark' : '☀️ Light';
+  button.setAttribute('aria-pressed', String(dark));
+  button.setAttribute('aria-label', 'Dark mode');
+  button.title = `Switch to ${dark ? 'light' : 'dark'} mode`;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1a1a19' : '#fcfcfb');
 }
 
-export function initTheme(button, onChange) {
-  let theme = savedTheme();
-  applyTheme(theme, button);
+export function initTheme(button) {
+  applyTheme(button);
   button.addEventListener('click', () => {
-    theme = ORDER[(ORDER.indexOf(theme) + 1) % ORDER.length];
+    chosen = currentTheme() === 'dark' ? 'light' : 'dark';
     try {
-      if (theme === 'auto') localStorage.removeItem(KEY);
-      else localStorage.setItem(KEY, theme);
+      localStorage.setItem(KEY, chosen);
     } catch {}
-    applyTheme(theme, button);
-    onChange?.();
+    applyTheme(button);
   });
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    applyTheme(theme, button);
-    onChange?.();
-  });
+  media.addEventListener('change', () => applyTheme(button));
 }
