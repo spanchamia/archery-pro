@@ -13,10 +13,24 @@ export function endTotal(end) {
   return end.reduce((sum, a) => sum + arrowScore(a), 0);
 }
 
+// Whether the last end is still being shot. Sessions saved before ends could
+// vary in length have no `endOpen` flag, so fall back to the fixed count.
+export function isEndOpen(session) {
+  const last = session.ends[session.ends.length - 1];
+  if (!last || !last.length) return false;
+  if (typeof session.endOpen === 'boolean') return session.endOpen;
+  return last.length < session.arrowsPerEnd;
+}
+
+// Planned arrows per end, or 0 when the archer ends each end by hand.
+export function plannedArrows(session) {
+  return Number(session.arrowsPerEnd) || 0;
+}
+
 export function sessionStats(session) {
   const arrows = session.ends.flat();
   const total = arrows.reduce((sum, a) => sum + arrowScore(a), 0);
-  const completeEnds = session.ends.filter((e) => e.length === session.arrowsPerEnd);
+  const completeEnds = isEndOpen(session) ? session.ends.slice(0, -1) : session.ends;
   return {
     ends: completeEnds.length,
     arrows: arrows.length,

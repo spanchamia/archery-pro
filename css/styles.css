@@ -168,9 +168,10 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 .end-label { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px; }
 
-.slots { display: flex; gap: 8px; margin-bottom: 16px; }
+.slots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .slot {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 44px;
   height: 52px;
   border-radius: 10px;
   border: 2px dashed var(--border);
@@ -194,7 +195,9 @@ button:disabled { opacity: 0.4; cursor: default; }
   user-select: none;
 }
 .key:active { transform: scale(0.95); }
-.keypad-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.keypad-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.inline-select { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 0; color: var(--text-muted); }
+.inline-select select { width: auto; margin-top: 0; }
 
 /* Target face colours */
 .ring-gold { background: var(--gold); color: #1c1c1a; }

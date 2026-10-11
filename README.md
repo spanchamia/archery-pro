@@ -6,14 +6,15 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 
 ## Features
 
-- Start a practice session with a date, arrows per end (3 or 6) and optional notes such as distance and target face.
+- Start a practice session with a date, arrows per end (3, 6 or varies) and optional notes such as distance and target face.
+- Ends can have any number of arrows. Change the arrows-per-end count at any point during practice, or tap **End done** to close an end early. With "Any", every end stays open until you tap End done.
 - Big tap-friendly keypad coloured like a 10-ring indoor face: X, 10–1 and M (miss). X counts as 10 and is tracked separately.
-- The end fills as you tap and moves on to the next end automatically. Undo removes the last arrow.
+- With a set count, the end fills as you tap and moves on to the next end automatically. Undo removes the last arrow and reopens its end.
 - Live session stats: average per arrow, average per end, total, ends shot, 10s and Xs.
 - Progress tab with a chart of average arrow score per session, overall stats and a list of all sessions you can reopen or delete.
 - Export and import a JSON backup.
 - Light / dark mode switch in the header. It follows your device setting until you tap it, then remembers your choice.
-- Keyboard scoring on desktop: `x`, `1`–`9`, `0` for 10, `m` for miss, Backspace to undo.
+- Keyboard scoring on desktop: `x`, `1`–`9`, `0` for 10, `m` for miss, Enter for End done, Backspace to undo.
 
 ## Running locally
 
@@ -35,13 +36,16 @@ All persistence goes through `js/storage.js`, which exposes an async interface (
 
 ## Data model
 
+`arrowsPerEnd` is the count used for new ends (0 means ends are closed by hand). Each end stores its own arrows, so ends can differ in length. `endOpen` says whether the last end is still being shot.
+
 ```json
 {
   "id": "uuid",
   "date": "2026-10-10",
   "notes": "18m, 40cm triple spot",
   "arrowsPerEnd": 3,
-  "ends": [["X", "10", "9"], ["10", "9", "8"]],
+  "ends": [["X", "10", "9"], ["10", "9", "8", "7", "9", "10"]],
+  "endOpen": false,
   "completed": true,
   "createdAt": "ISO timestamp",
   "updatedAt": "ISO timestamp"

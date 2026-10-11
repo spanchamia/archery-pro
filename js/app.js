@@ -1,7 +1,7 @@
-import { storage } from './storage.js';
-import { ARROW_VALUES, endTotal, sessionStats, ringClass, fmt } from './scoring.js';
-import { renderLineChart } from './chart.js';
-import { initTheme } from './theme.js?v=3';
+import { storage } from './storage.js?v=4';
+import { ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows } from './scoring.js?v=4';
+import { renderLineChart } from './chart.js?v=4';
+import { initTheme } from './theme.js?v=4';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -35,10 +35,13 @@ function statTiles(items) {
   return items.map(([label, value]) => `<div class="stat"><span class="stat-value">${value}</span><span class="stat-label">${label}</span></div>`).join('');
 }
 
-// The end being filled in: the last end if it isn't full yet.
+// The end being filled in, or null if the next arrow starts a new end.
 function currentEnd() {
-  const last = active.ends[active.ends.length - 1];
-  return last && last.length < active.arrowsPerEnd ? last : null;
+  return isEndOpen(active) ? active.ends[active.ends.length - 1] : null;
+}
+
+function arrowsLabel(n) {
+  return n ? `${n} arrow${n === 1 ? '' : 's'} per end` : 'Arrows per end vary';
 }
 
 async function persist() {
@@ -64,7 +67,7 @@ function renderPractice() {
   }
 
   $('#session-title').textContent = longDate(active.date);
-  $('#session-notes').textContent = active.notes || `${active.arrowsPerEnd} arrows per end`;
+  $('#session-notes').textContent = active.notes || arrowsLabel(plannedArrows(active));
 
   const st = sessionStats(active);
   $('#live-stats').innerHTML = statTiles([
@@ -75,22 +78,28 @@ function renderPractice() {
     ['10s (X)', `${st.tens} (${st.xs})`],
   ]);
 
-  // Current end slots.
+  // Current end slots. With a planned count, show that many slots; otherwise
+  // show what's been shot plus one empty slot for the next arrow.
+  const planned = plannedArrows(active);
   const cur = currentEnd() || [];
   const endNo = currentEnd() ? active.ends.length : active.ends.length + 1;
   $('#end-number').textContent = `End ${endNo}`;
-  $('#end-running').textContent = cur.length ? `${endTotal(cur)} so far` : '';
-  $('#current-end').innerHTML = Array.from({ length: active.arrowsPerEnd }, (_, i) =>
+  $('#end-running').textContent = cur.length ? `${cur.length} arrow${cur.length === 1 ? '' : 's'} · ${endTotal(cur)} so far` : '';
+  $('#arrows-select').value = String(planned);
+  const slotCount = planned ? Math.max(planned, cur.length + (cur.length >= planned ? 0 : 1)) : cur.length + 1;
+  $('#current-end').innerHTML = Array.from({ length: slotCount }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
   ).join('');
 
   $('#undo-btn').disabled = active.ends.length === 0;
+  $('#end-done-btn').disabled = cur.length === 0;
 
   // Ends table, newest first.
   let running = 0;
+  const openIndex = isEndOpen(active) ? active.ends.length - 1 : -1;
   const rows = active.ends.map((end, i) => {
     running += endTotal(end);
-    return `<tr class="${end.length < active.arrowsPerEnd ? 'partial' : ''}">
+    return `<tr class="${i === openIndex ? 'partial' : ''}">
       <td>${i + 1}</td>
       <td class="chips">${end.map(chip).join('')}</td>
       <td class="num">${endTotal(end)}</td>
@@ -145,9 +154,13 @@ async function renderHistory() {
 // ---------- actions ----------
 
 async function addArrow(value) {
-  const cur = currentEnd();
+  let cur = currentEnd();
   if (cur) cur.push(value);
-  else active.ends.push([value]);
+  else active.ends.push((cur = [value]));
+  // With a planned count, the end closes by itself once it's reached;
+  // otherwise it stays open until "End done".
+  const planned = plannedArrows(active);
+  active.endOpen = !(planned && cur.length >= planned);
   await persist();
   renderPractice();
   if (navigator.vibrate) navigator.vibrate(10);
@@ -157,26 +170,48 @@ async function undo() {
   const last = active.ends[active.ends.length - 1];
   if (!last) return;
   last.pop();
-  if (!last.length) active.ends.pop();
+  // Undo reopens the end it came from, so the archer can re-score that arrow.
+  if (last.length) active.endOpen = true;
+  else {
+    active.ends.pop();
+    active.endOpen = false;
+  }
   await persist();
   renderPractice();
 }
 
 async function deleteEnd(index) {
   if (!confirm(`Delete end ${index + 1}?`)) return;
+  if (index === active.ends.length - 1) active.endOpen = false;
   active.ends.splice(index, 1);
   await persist();
   renderPractice();
 }
 
-async function finishSession() {
+async function endDone() {
+  if (!currentEnd()) return;
+  active.endOpen = false;
+  await persist();
+  renderPractice();
+}
+
+// Change how many arrows the coming ends have. An end in progress that
+// already has that many arrows is closed.
+async function setPlannedArrows(n) {
+  active.arrowsPerEnd = n;
   const cur = currentEnd();
-  if (cur && !confirm(`End ${active.ends.length} only has ${cur.length} of ${active.arrowsPerEnd} arrows. Finish anyway?`)) return;
+  if (cur && n && cur.length >= n) active.endOpen = false;
+  await persist();
+  renderPractice();
+}
+
+async function finishSession() {
   if (!active.ends.length) {
     if (!confirm('No arrows scored. Discard this session?')) return;
     await storage.deleteSession(active.id);
   } else {
     active.completed = true;
+    active.endOpen = false;
     await persist();
   }
   await storage.setActiveSessionId(null);
@@ -190,8 +225,9 @@ async function startSession(form) {
     id: newId(),
     date: form.date.value || todayISO(),
     notes: form.notes.value.trim(),
-    arrowsPerEnd: Number(form.arrowsPerEnd.value) || 3,
+    arrowsPerEnd: Number(form.arrowsPerEnd.value),
     ends: [],
+    endOpen: false,
     completed: false,
     createdAt: now,
   };
@@ -265,6 +301,8 @@ async function init() {
     if (v) addArrow(v);
   });
   $('#undo-btn').addEventListener('click', undo);
+  $('#end-done-btn').addEventListener('click', endDone);
+  $('#arrows-select').addEventListener('change', (e) => setPlannedArrows(Number(e.target.value)));
   $('#finish-btn').addEventListener('click', finishSession);
   $('#ends-body').addEventListener('click', (e) => {
     const i = e.target.closest('[data-delete-end]')?.dataset.deleteEnd;
@@ -282,7 +320,8 @@ async function init() {
     e.target.value = '';
   });
 
-  // Keyboard scoring on desktop: digits, 0 for 10, x, m, backspace to undo.
+  // Keyboard scoring on desktop: digits, 0 for 10, x, m, Enter to finish
+  // the end, Backspace to undo.
   document.addEventListener('keydown', (e) => {
     if (!active || $('#view-practice').hidden || e.target.matches('input, select, textarea')) return;
     const k = e.key.toLowerCase();
@@ -291,6 +330,10 @@ async function init() {
     else if (k === '0') addArrow('10');
     else if (/^[1-9]$/.test(k)) addArrow(k);
     else if (k === 'backspace') undo();
+    else if (k === 'enter') endDone();
+    else return;
+    // Stop Enter from also pressing whichever keypad button has focus.
+    e.preventDefault();
   });
 
   let resizeTimer;

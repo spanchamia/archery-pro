@@ -13,7 +13,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
   <header class="app-header">
@@ -39,6 +39,7 @@
           <select name="arrowsPerEnd">
             <option value="3" selected>3</option>
             <option value="6">6</option>
+            <option value="0">Varies (tap End done after each end)</option>
           </select>
         </label>
         <label>Notes <span class="muted">(optional)</span>
@@ -67,7 +68,19 @@
           <div id="keypad" class="keypad"></div>
           <div class="keypad-actions">
             <button id="undo-btn" class="secondary">↶ Undo</button>
+            <button id="end-done-btn" class="secondary">End done ✓</button>
           </div>
+          <label class="inline-select">Arrows per end
+            <select id="arrows-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="0">Any (End done)</option>
+            </select>
+          </label>
         </div>
 
         <div class="card">
@@ -109,6 +122,6 @@
     </section>
   </main>
 
-  <script type="module" src="js/app.js?v=3"></script>
+  <script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>
