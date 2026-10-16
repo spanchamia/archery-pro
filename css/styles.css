@@ -274,3 +274,21 @@ button:disabled { opacity: 0.4; cursor: default; }
 }
 
 .data-tools p { font-size: 0.9rem; margin-top: 0; }
+
+/* ---------- setup (distance / target size) ---------- */
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.setup-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.setup-chip {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  gap: 8px;
+}
+.setup-chip[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.setup-chip .count { font-weight: 400; opacity: 0.8; font-variant-numeric: tabular-nums; }
+#chart-setup { display: block; margin-top: 4px; font-size: 0.85rem; font-weight: 400; }
+

@@ -1,11 +1,15 @@
-import { storage } from './storage.js?v=4';
-import { ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows } from './scoring.js?v=4';
-import { renderLineChart } from './chart.js?v=4';
-import { initTheme } from './theme.js?v=4';
+import { storage } from './storage.js?v=5';
+import {
+  ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
+  TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
+} from './scoring.js?v=5';
+import { renderLineChart } from './chart.js?v=5';
+import { initTheme } from './theme.js?v=5';
 
 const $ = (sel) => document.querySelector(sel);
 
 let active = null; // the session currently being scored
+let progressSetup = null; // setup key shown on the Progress tab
 
 // ---------- helpers ----------
 
@@ -63,11 +67,12 @@ function renderPractice() {
   $('#active-session').hidden = !active;
   if (!active) {
     $('#start-form').date.value = todayISO();
+    prefillSetup();
     return;
   }
 
   $('#session-title').textContent = longDate(active.date);
-  $('#session-notes').textContent = active.notes || arrowsLabel(plannedArrows(active));
+  $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes || arrowsLabel(plannedArrows(active))].join(' · ');
 
   const st = sessionStats(active);
   $('#live-stats').innerHTML = statTiles([
@@ -112,8 +117,29 @@ function renderPractice() {
 }
 
 async function renderHistory() {
-  const sessions = (await storage.listSessions()).filter((s) => s.ends.some((e) => e.length));
-  const withStats = sessions.map((s) => ({ s, st: sessionStats(s) }));
+  const allSessions = (await storage.listSessions()).filter((s) => s.ends.some((e) => e.length));
+  const allWithStats = allSessions.map((s) => ({ s, st: sessionStats(s), setup: sessionSetup(s) }));
+
+  // One setup at a time on the chart and stats: averages from different
+  // distances and target sizes aren't comparable.
+  const setups = new Map();
+  for (const { setup } of allWithStats) {
+    const key = setupKey(setup);
+    setups.set(key, { setup, count: (setups.get(key)?.count || 0) + 1 });
+  }
+  const latest = allWithStats[allWithStats.length - 1];
+  if (!setups.has(progressSetup)) progressSetup = latest ? setupKey(latest.setup) : null;
+  const ordered = [...setups.entries()].sort(([, a], [, b]) =>
+    a.setup.distanceM - b.setup.distanceM || a.setup.targetCm - b.setup.targetCm);
+  $('#setup-filter').hidden = setups.size === 0;
+  $('#setup-filter').innerHTML = ordered
+    .map(([key, { setup, count }]) => `<button class="setup-chip" role="radio" aria-checked="${key === progressSetup}" data-setup="${key}">
+      ${setupLabel(setup)} <span class="count">${count}</span></button>`)
+    .join('');
+  $('#chart-setup').textContent = progressSetup ? setupLabel(setups.get(progressSetup).setup) : '';
+
+  const withStats = allWithStats.filter(({ setup }) => setupKey(setup) === progressSetup);
+  const sessions = withStats.map(({ s }) => s);
 
   const allArrows = withStats.reduce((n, { st }) => n + st.arrows, 0);
   const allTotal = withStats.reduce((n, { st }) => n + st.total, 0);
@@ -130,14 +156,14 @@ async function renderHistory() {
     withStats.map(({ s, st }) => ({ date: s.date, value: st.avgArrow, label: s.notes || '' }))
   );
 
-  $('#sessions-empty').hidden = sessions.length > 0;
-  $('#session-list').innerHTML = withStats
+  $('#sessions-empty').hidden = allSessions.length > 0;
+  $('#session-list').innerHTML = allWithStats
     .slice()
     .reverse()
-    .map(({ s, st }) => `<li class="session-item">
+    .map(({ s, st, setup }) => `<li class="session-item">
       <div class="session-main">
         <strong>${longDate(s.date)}</strong>${s.id === active?.id ? ' <span class="badge">in progress</span>' : ''}
-        <span class="muted">${s.notes ? `${escapeHtml(s.notes)} · ` : ''}${st.ends} ends · ${st.arrows} arrows</span>
+        <span class="muted">${setupLabel(setup)} · ${s.notes ? `${escapeHtml(s.notes)} · ` : ''}${st.ends} end${st.ends === 1 ? '' : 's'} · ${st.arrows} arrows</span>
       </div>
       <div class="session-score">
         <span class="stat-value">${fmt(st.avgArrow)}</span>
@@ -212,11 +238,22 @@ async function finishSession() {
   } else {
     active.completed = true;
     active.endOpen = false;
+    progressSetup = setupKey(sessionSetup(active));
     await persist();
   }
   await storage.setActiveSessionId(null);
   active = null;
   showView('history');
+}
+
+// Pre-select the setup from the most recent session, since practice usually
+// continues on the same round.
+async function prefillSetup() {
+  const form = $('#start-form');
+  const sessions = await storage.listSessions();
+  const last = sessions.length ? sessionSetup(sessions[sessions.length - 1]) : DEFAULT_SETUP;
+  form.distanceM.value = String(last.distanceM);
+  form.targetCm.value = String(last.targetCm);
 }
 
 async function startSession(form) {
@@ -226,6 +263,8 @@ async function startSession(form) {
     date: form.date.value || todayISO(),
     notes: form.notes.value.trim(),
     arrowsPerEnd: Number(form.arrowsPerEnd.value),
+    distanceM: Number(form.distanceM.value),
+    targetCm: Number(form.targetCm.value),
     ends: [],
     endOpen: false,
     completed: false,
@@ -278,6 +317,12 @@ async function importData(file) {
 
 // ---------- wiring ----------
 
+function buildSetupOptions() {
+  const form = $('#start-form');
+  form.distanceM.innerHTML = DISTANCES_M.map((d) => `<option value="${d}">${d} m</option>`).join('');
+  form.targetCm.innerHTML = TARGET_SIZES_CM.map((t) => `<option value="${t}">${t} cm</option>`).join('');
+}
+
 function buildKeypad() {
   $('#keypad').innerHTML = ARROW_VALUES.map(
     (v) => `<button class="key ${ringClass(v)}" data-arrow="${v}" aria-label="${v === 'M' ? 'Miss' : v === 'X' ? 'X (inner 10)' : v}">${v}</button>`
@@ -287,6 +332,7 @@ function buildKeypad() {
 async function init() {
   initTheme($('#theme-toggle'));
   buildKeypad();
+  buildSetupOptions();
 
   const activeId = await storage.getActiveSessionId();
   if (activeId) active = await storage.getSession(activeId);
@@ -313,6 +359,13 @@ async function init() {
     const del = e.target.closest('[data-delete-session]')?.dataset.deleteSession;
     if (resume) resumeSession(resume);
     if (del) deleteSession(del);
+  });
+  $('#setup-filter').addEventListener('click', (e) => {
+    const key = e.target.closest('[data-setup]')?.dataset.setup;
+    if (key) {
+      progressSetup = key;
+      renderHistory();
+    }
   });
   $('#export-btn').addEventListener('click', exportData);
   $('#import-input').addEventListener('change', (e) => {

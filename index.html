@@ -13,7 +13,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
   <header class="app-header">
@@ -35,6 +35,14 @@
         <label>Date
           <input type="date" name="date" required>
         </label>
+        <div class="field-row">
+          <label>Distance
+            <select name="distanceM"></select>
+          </label>
+          <label>Target size
+            <select name="targetCm"></select>
+          </label>
+        </div>
         <label>Arrows per end
           <select name="arrowsPerEnd">
             <option value="3" selected>3</option>
@@ -43,7 +51,7 @@
           </select>
         </label>
         <label>Notes <span class="muted">(optional)</span>
-          <input type="text" name="notes" placeholder="e.g. 18m, 40cm triple spot" maxlength="80">
+          <input type="text" name="notes" placeholder="e.g. triple spot, new arrows" maxlength="80">
         </label>
         <button type="submit" class="primary">Start session</button>
       </form>
@@ -96,10 +104,12 @@
 
     <!-- History: chart across sessions + session list -->
     <section id="view-history" class="view" hidden>
+      <div class="setup-filter" id="setup-filter" role="radiogroup" aria-label="Distance and target size"></div>
+
       <div class="stats" id="overall-stats"></div>
 
       <div class="card">
-        <h2>Average arrow score per session</h2>
+        <h2>Average arrow score per session <span id="chart-setup" class="muted"></span></h2>
         <div id="chart" class="chart"></div>
       </div>
 
@@ -122,6 +132,6 @@
     </section>
   </main>
 
-  <script type="module" src="js/app.js?v=4"></script>
+  <script type="module" src="js/app.js?v=5"></script>
 </body>
 </html>

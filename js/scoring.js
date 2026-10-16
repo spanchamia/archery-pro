@@ -56,3 +56,24 @@ export function ringClass(value) {
 export function fmt(n, digits = 2) {
   return n === null || n === undefined ? '–' : n.toFixed(digits);
 }
+
+// Competition setups. Sessions saved before setups existed count as the
+// indoor 18m / 40cm round.
+export const TARGET_SIZES_CM = [40, 60, 80, 120];
+export const DISTANCES_M = [18, 30, 60, 72];
+export const DEFAULT_SETUP = { distanceM: 18, targetCm: 40 };
+
+export function sessionSetup(session) {
+  return {
+    distanceM: Number(session.distanceM) || DEFAULT_SETUP.distanceM,
+    targetCm: Number(session.targetCm) || DEFAULT_SETUP.targetCm,
+  };
+}
+
+export function setupKey(setup) {
+  return `${setup.distanceM}m-${setup.targetCm}cm`;
+}
+
+export function setupLabel(setup) {
+  return `${setup.distanceM}m · ${setup.targetCm}cm`;
+}
