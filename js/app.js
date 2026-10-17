@@ -1,10 +1,10 @@
-import { storage } from './storage.js?v=5';
+import { storage } from './storage.js?v=6';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
-} from './scoring.js?v=5';
-import { renderLineChart } from './chart.js?v=5';
-import { initTheme } from './theme.js?v=5';
+} from './scoring.js?v=6';
+import { renderLineChart } from './chart.js?v=6';
+import { initTheme } from './theme.js?v=6';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -79,6 +79,7 @@ function renderPractice() {
     ['Avg / arrow', fmt(st.avgArrow)],
     ['Avg / end', fmt(st.avgEnd, 1)],
     ['Total', st.total],
+    ['Arrows', st.arrows],
     ['Ends', st.ends],
     ['10s (X)', `${st.tens} (${st.xs})`],
   ]);

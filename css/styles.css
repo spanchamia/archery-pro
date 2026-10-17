@@ -292,3 +292,6 @@ button:disabled { opacity: 0.4; cursor: default; }
 .setup-chip .count { font-weight: 400; opacity: 0.8; font-variant-numeric: tabular-nums; }
 #chart-setup { display: block; margin-top: 4px; font-size: 0.85rem; font-weight: 400; }
 
+/* Six live tiles during practice: two even rows of three. */
+#live-stats { grid-template-columns: repeat(3, 1fr); }
+
