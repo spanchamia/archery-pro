@@ -16,6 +16,19 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 - Light / dark mode switch in the header. It follows your device setting until you tap it, then remembers your choice.
 - Keyboard scoring on desktop: `x`, `1`–`9`, `0` for 10, `m` for miss, Enter for End done, Backspace to undo.
 
+## Offline use and installing on a phone
+
+After the app has been opened once with an internet connection, it works with no connection: a service worker (`sw.js`) keeps a copy of every app file on the device. When the device is online, the app quietly downloads updates in the background and uses them the next time it opens.
+
+To install it like an app:
+
+- **iPhone / iPad (Safari):** open the site, tap the Share button, then **Add to Home Screen**.
+- **Android (Chrome):** open the site, tap the ⋮ menu, then **Install app** (or **Add to Home screen**).
+
+On iPhone, the home-screen app keeps its own data, separate from Safari, so start using it from the home-screen icon. Use Export / Import backup to move existing sessions across.
+
+When changing app files, bump `CACHE` in `sw.js` (and the `?v=` numbers in `index.html` / `js/app.js`) so installed copies pick up the new files.
+
 ## Running locally
 
 It is plain HTML, CSS and JavaScript modules with no build step. Serve the folder with any static server, for example:

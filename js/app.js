@@ -1,10 +1,10 @@
-import { storage } from './storage.js?v=6';
+import { storage } from './storage.js?v=7';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
-} from './scoring.js?v=6';
-import { renderLineChart } from './chart.js?v=6';
-import { initTheme } from './theme.js?v=6';
+} from './scoring.js?v=7';
+import { renderLineChart } from './chart.js?v=7';
+import { initTheme } from './theme.js?v=7';
 
 const $ = (sel) => document.querySelector(sel);
 
