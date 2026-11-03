@@ -1,5 +1,5 @@
-// Small dependency-free SVG line chart of average arrow score per session,
-// with a hover/tap tooltip.
+// Small dependency-free SVG line chart with a hover/tap tooltip. Used for
+// average arrow score per session, and per end within a session.
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -18,16 +18,33 @@ function niceRange(values) {
   return [lo, hi];
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function shortDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 // points: [{ date: 'YYYY-MM-DD', value: Number, label: String }]
-export function renderLineChart(container, points) {
+// options:
+//   xLabel(point, i)  axis / tooltip text for a point (default: short date)
+//   unit              text after the value in the tooltip
+//   reference         { value, label } dashed horizontal guide line
+//   ariaLabel, emptyText
+export function renderLineChart(container, points, options = {}) {
+  const {
+    xLabel = (p) => shortDate(p.date),
+    unit = 'avg/arrow',
+    reference = null,
+    ariaLabel = 'Average arrow score per session',
+    emptyText = 'Finish a session to see your progress here.',
+  } = options;
+
   container.innerHTML = '';
   if (!points.length) {
-    container.innerHTML = '<p class="empty">Finish a session to see your progress here.</p>';
+    container.innerHTML = `<p class="empty">${emptyText}</p>`;
     return;
   }
 
@@ -37,7 +54,7 @@ export function renderLineChart(container, points) {
   const w = width - m.left - m.right;
   const h = height - m.top - m.bottom;
 
-  const [lo, hi] = niceRange(points.map((p) => p.value));
+  const [lo, hi] = niceRange([...points.map((p) => p.value), ...(reference ? [reference.value] : [])]);
   const x = (i) => m.left + (points.length === 1 ? w / 2 : (i / (points.length - 1)) * w);
   const y = (v) => m.top + h - ((v - lo) / (hi - lo)) * h;
 
@@ -46,7 +63,7 @@ export function renderLineChart(container, points) {
     width,
     height,
     role: 'img',
-    'aria-label': 'Average arrow score per session',
+    'aria-label': ariaLabel,
   });
 
   // Horizontal gridlines and y labels.
@@ -64,8 +81,15 @@ export function renderLineChart(container, points) {
     if (i % every !== 0 && i !== points.length - 1) return;
     if (i !== points.length - 1 && points.length - 1 - i < every) return;
     const t = el('text', { x: x(i), y: height - 8, class: 'axis', 'text-anchor': 'middle' }, svg);
-    t.textContent = shortDate(p.date);
+    t.textContent = xLabel(p, i);
   });
+
+  // Optional reference line, e.g. the session average.
+  if (reference) {
+    el('line', { x1: m.left, x2: m.left + w, y1: y(reference.value), y2: y(reference.value), class: 'reference' }, svg);
+    const t = el('text', { x: m.left + 4, y: y(reference.value) - 6, class: 'reference-label' }, svg);
+    t.textContent = reference.label;
+  }
 
   // Line and dots.
   const d = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ');
@@ -96,7 +120,7 @@ export function renderLineChart(container, points) {
     crosshair.setAttribute('x2', x(best));
     crosshair.setAttribute('visibility', 'visible');
     dots.forEach((dot, i) => dot.setAttribute('r', i === best ? 6 : 4));
-    tooltip.innerHTML = `<strong>${p.value.toFixed(2)}</strong> avg/arrow<br>${shortDate(p.date)}${p.label ? ` · ${p.label}` : ''}`;
+    tooltip.innerHTML = `<strong>${p.value.toFixed(2)}</strong> ${unit}<br>${xLabel(p, best)}${p.label ? ` · ${escapeHtml(p.label)}` : ''}`;
     tooltip.hidden = false;
     const left = (x(best) / width) * rect.width;
     tooltip.style.left = `${Math.min(Math.max(left, 70), rect.width - 70)}px`;

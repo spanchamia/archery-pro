@@ -214,7 +214,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .ends-table tr.partial td { color: var(--text-muted); }
 .ends-table tr.partial .chip { opacity: 0.6; }
 .ends-table .num { text-align: right; font-weight: 600; }
-.ends-table th:nth-child(3), .ends-table th:nth-child(4) { text-align: right; }
+.ends-table th:nth-child(3), .ends-table th:nth-child(4), .ends-table th:nth-child(5) { text-align: right; }
 .chips { display: flex; gap: 4px; flex-wrap: wrap; }
 .chip {
   min-width: 28px;
@@ -237,6 +237,8 @@ button:disabled { opacity: 0.4; cursor: default; }
 .chart .series-line { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .chart .series-dot { fill: var(--series); stroke: var(--surface); stroke-width: 2; }
 .chart .value-label { fill: var(--text); font-size: 12px; font-weight: 600; }
+.chart .reference { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 6 4; }
+.chart .reference-label { fill: var(--text-muted); font-size: 11px; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
 .chart .crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .tooltip {
   position: absolute;

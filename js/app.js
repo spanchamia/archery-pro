@@ -1,10 +1,10 @@
-import { storage } from './storage.js?v=7';
+import { storage } from './storage.js?v=8';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
-} from './scoring.js?v=7';
-import { renderLineChart } from './chart.js?v=7';
-import { initTheme } from './theme.js?v=7';
+} from './scoring.js?v=8';
+import { renderLineChart } from './chart.js?v=8';
+import { initTheme } from './theme.js?v=8';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -109,12 +109,30 @@ function renderPractice() {
       <td>${i + 1}</td>
       <td class="chips">${end.map(chip).join('')}</td>
       <td class="num">${endTotal(end)}</td>
+      <td class="num">${fmt(endTotal(end) / end.length)}</td>
       <td class="num muted">${running}</td>
       <td><button class="icon-btn" data-delete-end="${i}" aria-label="Delete end ${i + 1}">✕</button></td>
     </tr>`;
   });
   $('#ends-body').innerHTML = rows.reverse().join('');
   $('#ends-empty').hidden = active.ends.length > 0;
+
+  renderEndChart(st);
+}
+
+// End-by-end chart for the open session: average arrow score of each
+// finished end, with the session's running average as a guide line.
+function renderEndChart(st) {
+  const finished = isEndOpen(active) ? active.ends.slice(0, -1) : active.ends;
+  const points = finished.map((end, i) => ({ end: i + 1, value: endTotal(end) / end.length }));
+  $('#end-chart-card').hidden = points.length === 0;
+  if (!points.length || $('#view-practice').hidden) return;
+  renderLineChart($('#end-chart'), points, {
+    xLabel: (p) => `End ${p.end}`,
+    unit: `avg/arrow`,
+    reference: st.avgArrow !== null && points.length > 1 ? { value: st.avgArrow, label: `Session avg ${fmt(st.avgArrow)}` } : null,
+    ariaLabel: 'Average arrow score for each end in this session',
+  });
 }
 
 async function renderHistory() {
@@ -393,7 +411,7 @@ async function init() {
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => !$('#view-history').hidden && renderHistory(), 150);
+    resizeTimer = setTimeout(() => (!$('#view-history').hidden ? renderHistory() : active && renderPractice()), 150);
   });
 
   showView('practice');
