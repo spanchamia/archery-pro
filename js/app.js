@@ -1,10 +1,10 @@
-import { storage } from './storage.js?v=9';
+import { storage } from './storage.js?v=10';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
-} from './scoring.js?v=9';
-import { renderLineChart } from './chart.js?v=9';
-import { initTheme } from './theme.js?v=9';
+} from './scoring.js?v=10';
+import { renderLineChart } from './chart.js?v=10';
+import { initTheme } from './theme.js?v=10';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -139,7 +139,8 @@ function renderTally() {
   for (const a of active.ends.flat()) counts[a] += 1;
   const total = active.ends.flat().length;
   $('#tally-total').textContent = `${total} arrow${total === 1 ? '' : 's'}`;
-  $('#tally').innerHTML = ARROW_VALUES.map((v) => `<div class="tally-row${counts[v] ? '' : ' zero'}">
+  // Lowest score first: M, 1, 2 … 10, X.
+  $('#tally').innerHTML = [...ARROW_VALUES].reverse().map((v) => `<div class="tally-row${counts[v] ? '' : ' zero'}">
       <span class="chip ${ringClass(v)}">${v}</span>
       <span class="tally-marks" aria-label="${counts[v]} × ${v === 'M' ? 'miss' : v}">${tallyMarks(counts[v])}</span>
       <span class="tally-count">${counts[v]}</span>

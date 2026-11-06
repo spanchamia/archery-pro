@@ -10,7 +10,7 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 - Ends can have any number of arrows. Change the arrows-per-end count at any point during practice, or tap **End done** to close an end early. With "Any", every end stays open until you tap End done.
 - Big tap-friendly keypad coloured like a 10-ring indoor face: X, 10–1 and M (miss). X counts as 10 and is tracked separately.
 - With a set count, the end fills as you tap and moves on to the next end automatically. Undo removes the last arrow and reopens its end.
-- A Tally card under the keypad shows tally marks (in gates of five) and a count for every score from X down to M.
+- A Tally card under the keypad shows tally marks (in gates of five) and a count for every score from M up to X.
 - Live session stats: average per arrow, average per end, total, arrows shot, ends shot, 10s and Xs.
 - Each end in the Ends table shows its own average per arrow, and a chart under it plots that average end by end, with a dashed line for the session average. Open any past session from the Progress tab to see its chart.
 - Progress tab with a chart of average arrow score per session, overall stats and a list of all sessions you can reopen or delete. Pick a distance and target size combination at the top to see progress for that setup; only setups you've shot appear.
