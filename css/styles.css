@@ -297,3 +297,23 @@ button:disabled { opacity: 0.4; cursor: default; }
 /* Six live tiles during practice: two even rows of three. */
 #live-stats { grid-template-columns: repeat(3, 1fr); }
 
+/* ---------- tally ---------- */
+
+.tally-head { display: flex; justify-content: space-between; align-items: baseline; }
+.tally { display: grid; grid-template-columns: 1fr; }
+.tally-row:last-child { border-bottom: 0; }
+.tally-row {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+}
+.tally-row.zero .chip { opacity: 0.35; }
+.tally-row.zero .tally-count { color: var(--text-muted); opacity: 0.6; }
+.tally-marks { display: flex; flex-wrap: wrap; gap: 4px 6px; min-width: 0; }
+.tally-group { stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; flex: none; }
+.tally-count { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+
