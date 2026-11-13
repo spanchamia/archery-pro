@@ -317,3 +317,38 @@ button:disabled { opacity: 0.4; cursor: default; }
 .tally-group { stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; flex: none; }
 .tally-count { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
 
+/* ---------- target position (top / bottom) ---------- */
+
+.segmented {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 12px;
+}
+.segmented button {
+  flex: 1;
+  background: none;
+  color: var(--text-muted);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+.segmented button[aria-checked="true"] { background: var(--accent); color: var(--accent-text); }
+#position-filter { margin-bottom: 16px; }
+.pos-badge {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 4px;
+  border-radius: 4px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+

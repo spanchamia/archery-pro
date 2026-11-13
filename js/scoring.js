@@ -77,3 +77,24 @@ export function setupKey(setup) {
 export function setupLabel(setup) {
   return `${setup.distanceM}m · ${setup.targetCm}cm`;
 }
+
+// Target position (top or bottom face) is recorded per end, so one session
+// can mix both. Ends saved before this have no position and only count
+// towards the combined view.
+export const POSITIONS = ['top', 'bottom'];
+export const POSITION_LABELS = { all: 'Combined', top: 'Top', bottom: 'Bottom' };
+
+export function endPosition(session, index) {
+  const p = session.endPositions && session.endPositions[index];
+  return POSITIONS.includes(p) ? p : null;
+}
+
+// Arrow totals for the ends shot at one position ('top' / 'bottom'), or for
+// every end when position is 'all'.
+export function positionStats(session, position) {
+  const ends = session.ends.filter((e, i) => e.length && (position === 'all' || endPosition(session, i) === position));
+  const arrows = ends.reduce((n, e) => n + e.length, 0);
+  const total = ends.reduce((n, e) => n + endTotal(e), 0);
+  return { ends: ends.length, arrows, total, avgArrow: arrows ? total / arrows : null };
+}
+

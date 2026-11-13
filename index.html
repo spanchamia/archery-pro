@@ -19,7 +19,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=10">
+  <link rel="stylesheet" href="css/styles.css?v=11">
 </head>
 <body>
   <header class="app-header">
@@ -49,6 +49,12 @@
             <select name="targetCm"></select>
           </label>
         </div>
+        <label>Target position
+          <select name="position">
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </label>
         <label>Arrows per end
           <select name="arrowsPerEnd">
             <option value="3" selected>3</option>
@@ -75,6 +81,10 @@
           <div class="end-label">
             <span id="end-number"></span>
             <span id="end-running" class="muted"></span>
+          </div>
+          <div id="position-toggle" class="segmented" role="radiogroup" aria-label="Target position">
+            <button type="button" role="radio" data-position="top">Top target</button>
+            <button type="button" role="radio" data-position="bottom">Bottom target</button>
           </div>
           <div id="current-end" class="slots"></div>
           <div id="keypad" class="keypad"></div>
@@ -125,6 +135,12 @@
     <section id="view-history" class="view" hidden>
       <div class="setup-filter" id="setup-filter" role="radiogroup" aria-label="Distance and target size"></div>
 
+      <div id="position-filter" class="segmented" role="radiogroup" aria-label="Target position">
+        <button type="button" role="radio" data-filter-position="all">Combined</button>
+        <button type="button" role="radio" data-filter-position="top">Top</button>
+        <button type="button" role="radio" data-filter-position="bottom">Bottom</button>
+      </div>
+
       <div class="stats" id="overall-stats"></div>
 
       <div class="card">
@@ -151,7 +167,7 @@
     </section>
   </main>
 
-  <script type="module" src="js/app.js?v=10"></script>
+  <script type="module" src="js/app.js?v=11"></script>
   <script>
     // Keep a copy of the app on the device so it works offline.
     if ('serviceWorker' in navigator) {

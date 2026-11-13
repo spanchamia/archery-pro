@@ -13,7 +13,8 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 - A Tally card under the keypad shows tally marks (in gates of five) and a count for every score from M up to X.
 - Live session stats: average per arrow, average per end, total, arrows shot, ends shot, 10s and Xs.
 - Each end in the Ends table shows its own average per arrow, and a chart under it plots that average end by end, with a dashed line for the session average. Open any past session from the Progress tab to see its chart.
-- Progress tab with a chart of average arrow score per session, overall stats and a list of all sessions you can reopen or delete. Pick a distance and target size combination at the top to see progress for that setup; only setups you've shot appear.
+- Top / bottom target: pick a target position when starting a session and switch with the **Top target / Bottom target** toggle above the end at any time. Each end remembers where it was shot (shown as T or B in the Ends table).
+- Progress tab with a chart of average arrow score per session, overall stats and a list of all sessions you can reopen or delete. Pick a distance and target size combination at the top to see progress for that setup; only setups you've shot appear. Below that, choose **Combined**, **Top** or **Bottom** to see progress for all ends, or only the ends shot on that target. Sessions recorded before positions existed only count towards Combined.
 - Export and import a JSON backup.
 - Light / dark mode switch in the header. It follows your device setting until you tap it, then remembers your choice.
 - Keyboard scoring on desktop: `x`, `1`–`9`, `0` for 10, `m` for miss, Enter for End done, Backspace to undo.
@@ -60,8 +61,10 @@ All persistence goes through `js/storage.js`, which exposes an async interface (
   "notes": "18m, 40cm triple spot",
   "distanceM": 18,
   "targetCm": 40,
+  "position": "top",
   "arrowsPerEnd": 3,
   "ends": [["X", "10", "9"], ["10", "9", "8", "7", "9", "10"]],
+  "endPositions": ["top", "bottom"],
   "endOpen": false,
   "completed": true,
   "createdAt": "ISO timestamp",

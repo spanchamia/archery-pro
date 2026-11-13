@@ -1,15 +1,17 @@
-import { storage } from './storage.js?v=10';
+import { storage } from './storage.js?v=11';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
-} from './scoring.js?v=10';
-import { renderLineChart } from './chart.js?v=10';
-import { initTheme } from './theme.js?v=10';
+  POSITIONS, POSITION_LABELS, endPosition, positionStats,
+} from './scoring.js?v=11';
+import { renderLineChart } from './chart.js?v=11';
+import { initTheme } from './theme.js?v=11';
 
 const $ = (sel) => document.querySelector(sel);
 
 let active = null; // the session currently being scored
 let progressSetup = null; // setup key shown on the Progress tab
+let progressPosition = 'all'; // 'all' (combined), 'top' or 'bottom' on the Progress tab
 
 // ---------- helpers ----------
 
@@ -42,6 +44,15 @@ function statTiles(items) {
 // The end being filled in, or null if the next arrow starts a new end.
 function currentEnd() {
   return isEndOpen(active) ? active.ends[active.ends.length - 1] : null;
+}
+
+// Position for new ends: the session's current choice, defaulting to top.
+function currentPosition() {
+  return POSITIONS.includes(active.position) ? active.position : 'top';
+}
+
+function positionBadge(pos) {
+  return pos ? `<span class="pos-badge pos-${pos}" title="${POSITION_LABELS[pos]}">${POSITION_LABELS[pos][0]}</span>` : '';
 }
 
 function arrowsLabel(n) {
@@ -92,6 +103,8 @@ function renderPractice() {
   $('#end-number').textContent = `End ${endNo}`;
   $('#end-running').textContent = cur.length ? `${cur.length} arrow${cur.length === 1 ? '' : 's'} · ${endTotal(cur)} so far` : '';
   $('#arrows-select').value = String(planned);
+  document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
+    b.setAttribute('aria-checked', String(b.dataset.position === currentPosition())));
   const slotCount = planned ? Math.max(planned, cur.length + (cur.length >= planned ? 0 : 1)) : cur.length + 1;
   $('#current-end').innerHTML = Array.from({ length: slotCount }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
@@ -106,7 +119,7 @@ function renderPractice() {
   const rows = active.ends.map((end, i) => {
     running += endTotal(end);
     return `<tr class="${i === openIndex ? 'partial' : ''}">
-      <td>${i + 1}</td>
+      <td>${i + 1}${positionBadge(endPosition(active, i))}</td>
       <td class="chips">${end.map(chip).join('')}</td>
       <td class="num">${endTotal(end)}</td>
       <td class="num">${fmt(endTotal(end) / end.length)}</td>
@@ -151,7 +164,10 @@ function renderTally() {
 // finished end, with the session's running average as a guide line.
 function renderEndChart(st) {
   const finished = isEndOpen(active) ? active.ends.slice(0, -1) : active.ends;
-  const points = finished.map((end, i) => ({ end: i + 1, value: endTotal(end) / end.length }));
+  const points = finished.map((end, i) => {
+    const pos = endPosition(active, i);
+    return { end: i + 1, value: endTotal(end) / end.length, label: pos ? POSITION_LABELS[pos] : '' };
+  });
   $('#end-chart-card').hidden = points.length === 0;
   if (!points.length || $('#view-practice').hidden) return;
   renderLineChart($('#end-chart'), points, {
@@ -182,9 +198,19 @@ async function renderHistory() {
     .map(([key, { setup, count }]) => `<button class="setup-chip" role="radio" aria-checked="${key === progressSetup}" data-setup="${key}">
       ${setupLabel(setup)} <span class="count">${count}</span></button>`)
     .join('');
-  $('#chart-setup').textContent = progressSetup ? setupLabel(setups.get(progressSetup).setup) : '';
+  $('#chart-setup').textContent = progressSetup
+    ? `${setupLabel(setups.get(progressSetup).setup)} · ${POSITION_LABELS[progressPosition]}`
+    : '';
+  $('#position-filter').hidden = setups.size === 0;
+  document.querySelectorAll('#position-filter [data-filter-position]').forEach((b) =>
+    b.setAttribute('aria-checked', String(b.dataset.filterPosition === progressPosition)));
 
-  const withStats = allWithStats.filter(({ setup }) => setupKey(setup) === progressSetup);
+  // Within the setup, keep only the ends shot at the chosen position; a
+  // session with none of those ends drops out of the chart.
+  const withStats = allWithStats
+    .filter(({ setup }) => setupKey(setup) === progressSetup)
+    .map((row) => ({ ...row, st: positionStats(row.s, progressPosition) }))
+    .filter(({ st }) => st.arrows > 0);
   const sessions = withStats.map(({ s }) => s);
 
   const allArrows = withStats.reduce((n, { st }) => n + st.arrows, 0);
@@ -199,7 +225,12 @@ async function renderHistory() {
 
   renderLineChart(
     $('#chart'),
-    withStats.map(({ s, st }) => ({ date: s.date, value: st.avgArrow, label: s.notes || '' }))
+    withStats.map(({ s, st }) => ({ date: s.date, value: st.avgArrow, label: s.notes || '' })),
+    {
+      emptyText: progressPosition === 'all'
+        ? 'Finish a session to see your progress here.'
+        : `No ${POSITION_LABELS[progressPosition].toLowerCase()} target ends recorded for this setup yet.`,
+    }
   );
 
   $('#sessions-empty').hidden = allSessions.length > 0;
@@ -228,7 +259,11 @@ async function renderHistory() {
 async function addArrow(value) {
   let cur = currentEnd();
   if (cur) cur.push(value);
-  else active.ends.push((cur = [value]));
+  else {
+    active.ends.push((cur = [value]));
+    active.endPositions = active.endPositions || [];
+    active.endPositions[active.ends.length - 1] = currentPosition();
+  }
   // With a planned count, the end closes by itself once it's reached;
   // otherwise it stays open until "End done".
   const planned = plannedArrows(active);
@@ -246,6 +281,7 @@ async function undo() {
   if (last.length) active.endOpen = true;
   else {
     active.ends.pop();
+    if (active.endPositions) active.endPositions.length = Math.min(active.endPositions.length, active.ends.length);
     active.endOpen = false;
   }
   await persist();
@@ -256,6 +292,7 @@ async function deleteEnd(index) {
   if (!confirm(`Delete end ${index + 1}?`)) return;
   if (index === active.ends.length - 1) active.endOpen = false;
   active.ends.splice(index, 1);
+  if (active.endPositions) active.endPositions.splice(index, 1);
   await persist();
   renderPractice();
 }
@@ -263,6 +300,18 @@ async function deleteEnd(index) {
 async function endDone() {
   if (!currentEnd()) return;
   active.endOpen = false;
+  await persist();
+  renderPractice();
+}
+
+// Switch between the top and bottom target. Applies to the end being shot
+// (if one is open) and every end after it.
+async function setPosition(pos) {
+  active.position = pos;
+  if (currentEnd()) {
+    active.endPositions = active.endPositions || [];
+    active.endPositions[active.ends.length - 1] = pos;
+  }
   await persist();
   renderPractice();
 }
@@ -297,9 +346,11 @@ async function finishSession() {
 async function prefillSetup() {
   const form = $('#start-form');
   const sessions = await storage.listSessions();
-  const last = sessions.length ? sessionSetup(sessions[sessions.length - 1]) : DEFAULT_SETUP;
+  const lastSession = sessions[sessions.length - 1];
+  const last = lastSession ? sessionSetup(lastSession) : DEFAULT_SETUP;
   form.distanceM.value = String(last.distanceM);
   form.targetCm.value = String(last.targetCm);
+  form.position.value = POSITIONS.includes(lastSession?.position) ? lastSession.position : 'top';
 }
 
 async function startSession(form) {
@@ -311,7 +362,9 @@ async function startSession(form) {
     arrowsPerEnd: Number(form.arrowsPerEnd.value),
     distanceM: Number(form.distanceM.value),
     targetCm: Number(form.targetCm.value),
+    position: form.position.value,
     ends: [],
+    endPositions: [],
     endOpen: false,
     completed: false,
     createdAt: now,
@@ -396,6 +449,17 @@ async function init() {
   $('#end-done-btn').addEventListener('click', endDone);
   $('#arrows-select').addEventListener('change', (e) => setPlannedArrows(Number(e.target.value)));
   $('#finish-btn').addEventListener('click', finishSession);
+  $('#position-toggle').addEventListener('click', (e) => {
+    const pos = e.target.closest('[data-position]')?.dataset.position;
+    if (pos) setPosition(pos);
+  });
+  $('#position-filter').addEventListener('click', (e) => {
+    const pos = e.target.closest('[data-filter-position]')?.dataset.filterPosition;
+    if (pos) {
+      progressPosition = pos;
+      renderHistory();
+    }
+  });
   $('#ends-body').addEventListener('click', (e) => {
     const i = e.target.closest('[data-delete-end]')?.dataset.deleteEnd;
     if (i !== undefined) deleteEnd(Number(i));
