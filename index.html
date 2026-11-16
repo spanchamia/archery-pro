@@ -19,7 +19,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=12">
+  <link rel="stylesheet" href="css/styles.css?v=13">
 </head>
 <body>
   <header class="app-header">
@@ -65,11 +65,8 @@
         <label>Notes <span class="muted">(optional)</span>
           <input type="text" name="notes" placeholder="e.g. triple spot, new arrows" maxlength="80">
         </label>
-        <label class="check-label">
-          <input type="checkbox" name="blind">
-          <span>Blind mode <span class="muted">(only enter scores; hide averages, totals and graphs while shooting)</span></span>
-        </label>
         <button type="submit" class="primary">Start session</button>
+        <p class="lite-link muted">Want the archer to enter scores without seeing averages? Open <a href="lite.html">Archery Pro Lite</a> on their phone.</p>
       </form>
 
       <div id="active-session" hidden>
@@ -80,7 +77,6 @@
           </div>
           <button id="finish-btn" class="secondary">Finish</button>
           <div class="session-tools">
-            <button id="blind-btn" class="secondary small" type="button" aria-pressed="false"></button>
             <button id="share-btn" class="secondary small" type="button">Share scores</button>
           </div>
         </div>
@@ -188,7 +184,7 @@
     <button id="share-close" class="primary" type="button">Done</button>
   </dialog>
 
-  <script type="module" src="js/app.js?v=12"></script>
+  <script type="module" src="js/app.js?v=13"></script>
   <script>
     // Keep a copy of the app on the device so it works offline.
     if ('serviceWorker' in navigator) {

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f5fae">
+  <link rel="manifest" href="manifest-lite.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Archery Lite">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Archery Pro Lite</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%AF%3C/text%3E%3C/svg%3E">
+  <script>
+    // Apply the saved theme before the page paints to avoid a flash.
+    try {
+      const t = localStorage.getItem('archeryPro.theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="css/styles.css?v=13">
+</head>
+<body>
+  <!-- Archery Pro Lite: archer-only scoring page. Raw scores in, nothing calculated shown. -->
+  <header class="app-header">
+    <div class="header-row">
+      <h1>🎯 Archery Pro <span class="lite-badge">Lite</span></h1>
+      <button id="theme-toggle" class="secondary theme-toggle" type="button"></button>
+    </div>
+  </header>
+
+  <main>
+    <form id="start-form" class="card" hidden>
+      <h2>New practice session</h2>
+      <label>Date
+        <input type="date" name="date" required>
+      </label>
+      <div class="field-row">
+        <label>Distance
+          <select name="distanceM"></select>
+        </label>
+        <label>Target size
+          <select name="targetCm"></select>
+        </label>
+      </div>
+      <label>Target position
+        <select name="position">
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+        </select>
+      </label>
+      <label>Arrows per end
+        <select name="arrowsPerEnd">
+          <option value="3" selected>3</option>
+          <option value="6">6</option>
+          <option value="0">Varies (tap End done after each end)</option>
+        </select>
+      </label>
+      <label>Notes <span class="muted">(optional)</span>
+        <input type="text" name="notes" placeholder="e.g. triple spot, new arrows" maxlength="80">
+      </label>
+      <button type="submit" class="primary">Start session</button>
+    </form>
+
+    <div id="past-card" class="card" hidden>
+      <h2>Past sessions</h2>
+      <ul id="session-list" class="session-list"></ul>
+    </div>
+
+    <div id="active-session" hidden>
+      <div class="card session-head">
+        <div>
+          <h2 id="session-title"></h2>
+          <p id="session-notes" class="muted"></p>
+        </div>
+        <button id="finish-btn" class="secondary">Finish</button>
+      </div>
+
+      <div class="card">
+        <div class="end-label">
+          <span id="end-number"></span>
+          <span id="end-count" class="muted"></span>
+        </div>
+        <div id="position-toggle" class="segmented" role="radiogroup" aria-label="Target position">
+          <button type="button" role="radio" data-position="top">Top target</button>
+          <button type="button" role="radio" data-position="bottom">Bottom target</button>
+        </div>
+        <div id="current-end" class="slots"></div>
+        <div id="keypad" class="keypad"></div>
+        <div class="keypad-actions">
+          <button id="undo-btn" class="secondary">↶ Undo</button>
+          <button id="end-done-btn" class="secondary">End done ✓</button>
+        </div>
+        <label class="inline-select">Arrows per end
+          <select id="arrows-select">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="0">Any (End done)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
+        <h3>Ends</h3>
+        <table class="ends-table">
+          <thead><tr><th>#</th><th>Arrows</th><th></th></tr></thead>
+          <tbody id="ends-body"></tbody>
+        </table>
+        <p id="ends-empty" class="empty">Tap the keypad to score your first end.</p>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="share-dialog" aria-labelledby="share-title">
+    <h2 id="share-title">Send scores to your coach</h2>
+    <p class="muted">Raw scores only. Your coach can also load the data file into Archery Pro to see averages and graphs.</p>
+    <textarea id="share-text" readonly rows="12"></textarea>
+    <div class="share-actions">
+      <button id="share-native" class="secondary" type="button" hidden>Share…</button>
+      <a id="share-email" class="button secondary" href="#">Email</a>
+      <button id="share-download" class="secondary" type="button">Download .txt</button>
+      <button id="share-json" class="secondary" type="button">Data file (.json)</button>
+      <button id="share-copy" class="secondary" type="button">Copy</button>
+    </div>
+    <button id="share-close" class="primary" type="button">Done</button>
+  </dialog>
+
+  <script type="module" src="js/lite.js?v=13"></script>
+  <script>
+    // Keep a copy of the page on the device so it works offline.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+    // Ask the browser not to clear saved sessions when space runs low.
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  </script>
+</body>
+</html>

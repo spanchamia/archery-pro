@@ -1,12 +1,13 @@
-import { storage } from './storage.js?v=12';
+import { storage } from './storage.js?v=13';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
   POSITIONS, POSITION_LABELS, endPosition, positionStats,
-} from './scoring.js?v=12';
-import { renderLineChart } from './chart.js?v=12';
-import { initTheme } from './theme.js?v=12';
-import { rawScoresText, rawScoresFilename } from './share.js?v=12';
+} from './scoring.js?v=13';
+import { renderLineChart } from './chart.js?v=13';
+import { initTheme } from './theme.js?v=13';
+import { initShareDialog, openShare } from './share.js?v=13';
+import * as S from './session.js?v=13';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -26,10 +27,6 @@ function longDate(iso) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function newId() {
-  return (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -40,16 +37,6 @@ function chip(value) {
 
 function statTiles(items) {
   return items.map(([label, value]) => `<div class="stat"><span class="stat-value">${value}</span><span class="stat-label">${label}</span></div>`).join('');
-}
-
-// The end being filled in, or null if the next arrow starts a new end.
-function currentEnd() {
-  return isEndOpen(active) ? active.ends[active.ends.length - 1] : null;
-}
-
-// Position for new ends: the session's current choice, defaulting to top.
-function currentPosition() {
-  return POSITIONS.includes(active.position) ? active.position : 'top';
 }
 
 function positionBadge(pos) {
@@ -83,11 +70,6 @@ function renderPractice() {
     return;
   }
 
-  // Blind mode: only the keypad and raw arrows are shown while shooting.
-  $('#active-session').classList.toggle('blind', !!active.blind);
-  $('#blind-btn').setAttribute('aria-pressed', String(!!active.blind));
-  $('#blind-btn').textContent = active.blind ? '🙈 Blind mode on' : '👁 Blind mode off';
-
   $('#session-title').textContent = longDate(active.date);
   $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes || arrowsLabel(plannedArrows(active))].join(' · ');
 
@@ -104,13 +86,13 @@ function renderPractice() {
   // Current end slots. With a planned count, show that many slots; otherwise
   // show what's been shot plus one empty slot for the next arrow.
   const planned = plannedArrows(active);
-  const cur = currentEnd() || [];
-  const endNo = currentEnd() ? active.ends.length : active.ends.length + 1;
+  const cur = S.currentEnd(active) || [];
+  const endNo = S.currentEnd(active) ? active.ends.length : active.ends.length + 1;
   $('#end-number').textContent = `End ${endNo}`;
   $('#end-running').textContent = cur.length ? `${cur.length} arrow${cur.length === 1 ? '' : 's'} · ${endTotal(cur)} so far` : '';
   $('#arrows-select').value = String(planned);
   document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
-    b.setAttribute('aria-checked', String(b.dataset.position === currentPosition())));
+    b.setAttribute('aria-checked', String(b.dataset.position === S.currentPosition(active))));
   const slotCount = planned ? Math.max(planned, cur.length + (cur.length >= planned ? 0 : 1)) : cur.length + 1;
   $('#current-end').innerHTML = Array.from({ length: slotCount }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
@@ -175,7 +157,7 @@ function renderEndChart(st) {
     return { end: i + 1, value: endTotal(end) / end.length, label: pos ? POSITION_LABELS[pos] : '' };
   });
   $('#end-chart-card').hidden = points.length === 0;
-  if (!points.length || $('#view-practice').hidden || active.blind) return;
+  if (!points.length || $('#view-practice').hidden) return;
   renderLineChart($('#end-chart'), points, {
     xLabel: (p) => `End ${p.end}`,
     unit: `avg/arrow`,
@@ -265,122 +247,28 @@ async function renderHistory() {
 
 // ---------- actions ----------
 
-async function addArrow(value) {
-  let cur = currentEnd();
-  if (cur) cur.push(value);
-  else {
-    active.ends.push((cur = [value]));
-    active.endPositions = active.endPositions || [];
-    active.endPositions[active.ends.length - 1] = currentPosition();
-  }
-  // With a planned count, the end closes by itself once it's reached;
-  // otherwise it stays open until "End done".
-  const planned = plannedArrows(active);
-  active.endOpen = !(planned && cur.length >= planned);
+// Apply a scoring step from session.js to the open session, then save and redraw.
+async function update(step, ...args) {
+  step(active, ...args);
   await persist();
   renderPractice();
+}
+
+async function addArrow(value) {
+  await update(S.addArrow, value);
   if (navigator.vibrate) navigator.vibrate(10);
 }
 
-async function undo() {
-  const last = active.ends[active.ends.length - 1];
-  if (!last) return;
-  last.pop();
-  // Undo reopens the end it came from, so the archer can re-score that arrow.
-  if (last.length) active.endOpen = true;
-  else {
-    active.ends.pop();
-    if (active.endPositions) active.endPositions.length = Math.min(active.endPositions.length, active.ends.length);
-    active.endOpen = false;
-  }
-  await persist();
-  renderPractice();
+const undo = () => update(S.undoArrow);
+const setPosition = (pos) => update(S.setPosition, pos);
+const setPlannedArrows = (n) => update(S.setPlannedArrows, n);
+
+async function endDone() {
+  if (S.currentEnd(active)) await update(S.closeEnd);
 }
 
 async function deleteEnd(index) {
-  if (!confirm(`Delete end ${index + 1}?`)) return;
-  if (index === active.ends.length - 1) active.endOpen = false;
-  active.ends.splice(index, 1);
-  if (active.endPositions) active.endPositions.splice(index, 1);
-  await persist();
-  renderPractice();
-}
-
-async function endDone() {
-  if (!currentEnd()) return;
-  active.endOpen = false;
-  await persist();
-  renderPractice();
-}
-
-async function toggleBlind() {
-  active.blind = !active.blind;
-  await persist();
-  renderPractice();
-}
-
-// ---------- sharing raw scores ----------
-
-let shareSession = null;
-
-function openShare(session) {
-  shareSession = session;
-  const text = rawScoresText(session, longDate(session.date));
-  $('#share-text').value = text;
-  $('#share-email').href = `mailto:?subject=${encodeURIComponent(`Archery scores ${session.date}`)}&body=${encodeURIComponent(text)}`;
-  $('#share-native').hidden = !navigator.share;
-  $('#share-copy').textContent = 'Copy';
-  $('#share-dialog').showModal();
-}
-
-async function shareNative() {
-  const text = $('#share-text').value;
-  try {
-    await navigator.share({ title: `Archery scores ${shareSession.date}`, text });
-  } catch {
-    // Cancelled, or sharing isn't available; the other buttons still work.
-  }
-}
-
-function downloadText() {
-  const blob = new Blob([$('#share-text').value + '\n'], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = rawScoresFilename(shareSession);
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-
-async function copyText() {
-  try {
-    await navigator.clipboard.writeText($('#share-text').value);
-  } catch {
-    $('#share-text').select();
-    document.execCommand('copy');
-  }
-  $('#share-copy').textContent = 'Copied ✓';
-}
-
-// Switch between the top and bottom target. Applies to the end being shot
-// (if one is open) and every end after it.
-async function setPosition(pos) {
-  active.position = pos;
-  if (currentEnd()) {
-    active.endPositions = active.endPositions || [];
-    active.endPositions[active.ends.length - 1] = pos;
-  }
-  await persist();
-  renderPractice();
-}
-
-// Change how many arrows the coming ends have. An end in progress that
-// already has that many arrows is closed.
-async function setPlannedArrows(n) {
-  active.arrowsPerEnd = n;
-  const cur = currentEnd();
-  if (cur && n && cur.length >= n) active.endOpen = false;
-  await persist();
-  renderPractice();
+  if (confirm(`Delete end ${index + 1}?`)) await update(S.deleteEnd, index);
 }
 
 async function finishSession() {
@@ -411,22 +299,14 @@ async function prefillSetup() {
 }
 
 async function startSession(form) {
-  const now = new Date().toISOString();
-  active = {
-    id: newId(),
+  active = S.newSession({
     date: form.date.value || todayISO(),
     notes: form.notes.value.trim(),
     arrowsPerEnd: Number(form.arrowsPerEnd.value),
     distanceM: Number(form.distanceM.value),
     targetCm: Number(form.targetCm.value),
     position: form.position.value,
-    blind: form.blind.checked,
-    ends: [],
-    endPositions: [],
-    endOpen: false,
-    completed: false,
-    createdAt: now,
-  };
+  });
   await persist();
   await storage.setActiveSessionId(active.id);
   form.notes.value = '';
@@ -507,12 +387,8 @@ async function init() {
   $('#end-done-btn').addEventListener('click', endDone);
   $('#arrows-select').addEventListener('change', (e) => setPlannedArrows(Number(e.target.value)));
   $('#finish-btn').addEventListener('click', finishSession);
-  $('#blind-btn').addEventListener('click', toggleBlind);
-  $('#share-btn').addEventListener('click', () => openShare(active));
-  $('#share-native').addEventListener('click', shareNative);
-  $('#share-download').addEventListener('click', downloadText);
-  $('#share-copy').addEventListener('click', copyText);
-  $('#share-close').addEventListener('click', () => $('#share-dialog').close());
+  initShareDialog();
+  $('#share-btn').addEventListener('click', () => openShare(active, longDate(active.date)));
   $('#position-toggle').addEventListener('click', (e) => {
     const pos = e.target.closest('[data-position]')?.dataset.position;
     if (pos) setPosition(pos);
@@ -532,7 +408,7 @@ async function init() {
     const resume = e.target.closest('[data-resume]')?.dataset.resume;
     const del = e.target.closest('[data-delete-session]')?.dataset.deleteSession;
     const share = e.target.closest('[data-share]')?.dataset.share;
-    if (share) storage.getSession(share).then((s) => s && openShare(s));
+    if (share) storage.getSession(share).then((s) => s && openShare(s, longDate(s.date)));
     if (resume) resumeSession(resume);
     if (del) deleteSession(del);
   });

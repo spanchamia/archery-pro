@@ -352,20 +352,25 @@ button:disabled { opacity: 0.4; cursor: default; }
   color: var(--text-muted);
 }
 
-/* ---------- blind mode ---------- */
+/* ---------- session tools / Lite page ---------- */
 
 .session-head { flex-wrap: wrap; }
 .session-tools { flex-basis: 100%; display: flex; gap: 8px; }
-#blind-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-.blind #live-stats,
-.blind #tally-card,
-.blind #end-chart-card,
-.blind #end-running,
-.blind .score-col { display: none !important; }
-
-.check-label { display: flex; align-items: flex-start; gap: 10px; font-weight: 600; }
-.check-label input { display: inline-block; width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
-.check-label .muted { font-weight: 400; }
+.lite-link { font-size: 0.85rem; margin: 14px 0 0; text-align: center; }
+.lite-link a { color: var(--accent); }
+.lite-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--accent);
+  color: var(--accent-text);
+  padding: 3px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.lite-saved { text-align: center; }
+.lite-saved p { margin: 0 0 12px; }
 
 /* ---------- share dialog ---------- */
 
