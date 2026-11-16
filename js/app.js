@@ -1,11 +1,12 @@
-import { storage } from './storage.js?v=11';
+import { storage } from './storage.js?v=12';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
   POSITIONS, POSITION_LABELS, endPosition, positionStats,
-} from './scoring.js?v=11';
-import { renderLineChart } from './chart.js?v=11';
-import { initTheme } from './theme.js?v=11';
+} from './scoring.js?v=12';
+import { renderLineChart } from './chart.js?v=12';
+import { initTheme } from './theme.js?v=12';
+import { rawScoresText, rawScoresFilename } from './share.js?v=12';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -82,6 +83,11 @@ function renderPractice() {
     return;
   }
 
+  // Blind mode: only the keypad and raw arrows are shown while shooting.
+  $('#active-session').classList.toggle('blind', !!active.blind);
+  $('#blind-btn').setAttribute('aria-pressed', String(!!active.blind));
+  $('#blind-btn').textContent = active.blind ? '🙈 Blind mode on' : '👁 Blind mode off';
+
   $('#session-title').textContent = longDate(active.date);
   $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes || arrowsLabel(plannedArrows(active))].join(' · ');
 
@@ -121,9 +127,9 @@ function renderPractice() {
     return `<tr class="${i === openIndex ? 'partial' : ''}">
       <td>${i + 1}${positionBadge(endPosition(active, i))}</td>
       <td class="chips">${end.map(chip).join('')}</td>
-      <td class="num">${endTotal(end)}</td>
-      <td class="num">${fmt(endTotal(end) / end.length)}</td>
-      <td class="num muted">${running}</td>
+      <td class="num score-col">${endTotal(end)}</td>
+      <td class="num score-col">${fmt(endTotal(end) / end.length)}</td>
+      <td class="num muted score-col">${running}</td>
       <td><button class="icon-btn" data-delete-end="${i}" aria-label="Delete end ${i + 1}">✕</button></td>
     </tr>`;
   });
@@ -169,7 +175,7 @@ function renderEndChart(st) {
     return { end: i + 1, value: endTotal(end) / end.length, label: pos ? POSITION_LABELS[pos] : '' };
   });
   $('#end-chart-card').hidden = points.length === 0;
-  if (!points.length || $('#view-practice').hidden) return;
+  if (!points.length || $('#view-practice').hidden || active.blind) return;
   renderLineChart($('#end-chart'), points, {
     xLabel: (p) => `End ${p.end}`,
     unit: `avg/arrow`,
@@ -247,7 +253,10 @@ async function renderHistory() {
         <span class="muted">${st.total} pts · ${st.tens} 10s</span>
       </div>
       <div class="session-actions">
-        <button class="secondary small" data-resume="${s.id}">${s.id === active?.id ? 'Continue' : 'Open'}</button>
+        <span class="row">
+          <button class="secondary small" data-resume="${s.id}">${s.id === active?.id ? 'Continue' : 'Open'}</button>
+          <button class="secondary small" data-share="${s.id}">Share</button>
+        </span>
         <button class="icon-btn" data-delete-session="${s.id}" aria-label="Delete session">✕</button>
       </div>
     </li>`)
@@ -302,6 +311,54 @@ async function endDone() {
   active.endOpen = false;
   await persist();
   renderPractice();
+}
+
+async function toggleBlind() {
+  active.blind = !active.blind;
+  await persist();
+  renderPractice();
+}
+
+// ---------- sharing raw scores ----------
+
+let shareSession = null;
+
+function openShare(session) {
+  shareSession = session;
+  const text = rawScoresText(session, longDate(session.date));
+  $('#share-text').value = text;
+  $('#share-email').href = `mailto:?subject=${encodeURIComponent(`Archery scores ${session.date}`)}&body=${encodeURIComponent(text)}`;
+  $('#share-native').hidden = !navigator.share;
+  $('#share-copy').textContent = 'Copy';
+  $('#share-dialog').showModal();
+}
+
+async function shareNative() {
+  const text = $('#share-text').value;
+  try {
+    await navigator.share({ title: `Archery scores ${shareSession.date}`, text });
+  } catch {
+    // Cancelled, or sharing isn't available; the other buttons still work.
+  }
+}
+
+function downloadText() {
+  const blob = new Blob([$('#share-text').value + '\n'], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = rawScoresFilename(shareSession);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function copyText() {
+  try {
+    await navigator.clipboard.writeText($('#share-text').value);
+  } catch {
+    $('#share-text').select();
+    document.execCommand('copy');
+  }
+  $('#share-copy').textContent = 'Copied ✓';
 }
 
 // Switch between the top and bottom target. Applies to the end being shot
@@ -363,6 +420,7 @@ async function startSession(form) {
     distanceM: Number(form.distanceM.value),
     targetCm: Number(form.targetCm.value),
     position: form.position.value,
+    blind: form.blind.checked,
     ends: [],
     endPositions: [],
     endOpen: false,
@@ -449,6 +507,12 @@ async function init() {
   $('#end-done-btn').addEventListener('click', endDone);
   $('#arrows-select').addEventListener('change', (e) => setPlannedArrows(Number(e.target.value)));
   $('#finish-btn').addEventListener('click', finishSession);
+  $('#blind-btn').addEventListener('click', toggleBlind);
+  $('#share-btn').addEventListener('click', () => openShare(active));
+  $('#share-native').addEventListener('click', shareNative);
+  $('#share-download').addEventListener('click', downloadText);
+  $('#share-copy').addEventListener('click', copyText);
+  $('#share-close').addEventListener('click', () => $('#share-dialog').close());
   $('#position-toggle').addEventListener('click', (e) => {
     const pos = e.target.closest('[data-position]')?.dataset.position;
     if (pos) setPosition(pos);
@@ -467,6 +531,8 @@ async function init() {
   $('#session-list').addEventListener('click', (e) => {
     const resume = e.target.closest('[data-resume]')?.dataset.resume;
     const del = e.target.closest('[data-delete-session]')?.dataset.deleteSession;
+    const share = e.target.closest('[data-share]')?.dataset.share;
+    if (share) storage.getSession(share).then((s) => s && openShare(s));
     if (resume) resumeSession(resume);
     if (del) deleteSession(del);
   });
@@ -486,7 +552,7 @@ async function init() {
   // Keyboard scoring on desktop: digits, 0 for 10, x, m, Enter to finish
   // the end, Backspace to undo.
   document.addEventListener('keydown', (e) => {
-    if (!active || $('#view-practice').hidden || e.target.matches('input, select, textarea')) return;
+    if (!active || $('#view-practice').hidden || $('#share-dialog').open || e.target.matches('input, select, textarea')) return;
     const k = e.key.toLowerCase();
     if (k === 'x') addArrow('X');
     else if (k === 'm') addArrow('M');

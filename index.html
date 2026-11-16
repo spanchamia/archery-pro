@@ -19,7 +19,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=11">
+  <link rel="stylesheet" href="css/styles.css?v=12">
 </head>
 <body>
   <header class="app-header">
@@ -65,6 +65,10 @@
         <label>Notes <span class="muted">(optional)</span>
           <input type="text" name="notes" placeholder="e.g. triple spot, new arrows" maxlength="80">
         </label>
+        <label class="check-label">
+          <input type="checkbox" name="blind">
+          <span>Blind mode <span class="muted">(only enter scores; hide averages, totals and graphs while shooting)</span></span>
+        </label>
         <button type="submit" class="primary">Start session</button>
       </form>
 
@@ -75,6 +79,10 @@
             <p id="session-notes" class="muted"></p>
           </div>
           <button id="finish-btn" class="secondary">Finish</button>
+          <div class="session-tools">
+            <button id="blind-btn" class="secondary small" type="button" aria-pressed="false"></button>
+            <button id="share-btn" class="secondary small" type="button">Share scores</button>
+          </div>
         </div>
 
         <div class="card">
@@ -105,7 +113,7 @@
           </label>
         </div>
 
-        <div class="card">
+        <div class="card" id="tally-card">
           <div class="tally-head">
             <h3>Tally</h3>
             <span id="tally-total" class="muted"></span>
@@ -118,7 +126,7 @@
         <div class="card">
           <h3>Ends</h3>
           <table class="ends-table">
-            <thead><tr><th>#</th><th>Arrows</th><th>End</th><th>Avg</th><th>Total</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Arrows</th><th class="score-col">End</th><th class="score-col">Avg</th><th class="score-col">Total</th><th></th></tr></thead>
             <tbody id="ends-body"></tbody>
           </table>
           <p id="ends-empty" class="empty">Tap the keypad to score your first end.</p>
@@ -167,7 +175,20 @@
     </section>
   </main>
 
-  <script type="module" src="js/app.js?v=11"></script>
+  <dialog id="share-dialog" aria-labelledby="share-title">
+    <h2 id="share-title">Raw scores</h2>
+    <p class="muted">Send these to your coach, or save them as a text file.</p>
+    <textarea id="share-text" readonly rows="12"></textarea>
+    <div class="share-actions">
+      <button id="share-native" class="secondary" type="button" hidden>Share…</button>
+      <a id="share-email" class="button secondary" href="#">Email</a>
+      <button id="share-download" class="secondary" type="button">Download .txt</button>
+      <button id="share-copy" class="secondary" type="button">Copy</button>
+    </div>
+    <button id="share-close" class="primary" type="button">Done</button>
+  </dialog>
+
+  <script type="module" src="js/app.js?v=12"></script>
   <script>
     // Keep a copy of the app on the device so it works offline.
     if ('serviceWorker' in navigator) {

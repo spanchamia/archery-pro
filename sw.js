@@ -3,7 +3,7 @@
 // refreshed in the background whenever the device is online, so updates
 // show up on the next launch.
 
-const CACHE = 'archery-pro-v11';
+const CACHE = 'archery-pro-v12';
 const APP_FILES = [
   './',
   'index.html',
@@ -12,6 +12,7 @@ const APP_FILES = [
   'js/app.js',
   'js/chart.js',
   'js/scoring.js',
+  'js/share.js',
   'js/storage.js',
   'js/theme.js',
   'icons/icon-192.png',

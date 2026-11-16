@@ -352,3 +352,43 @@ button:disabled { opacity: 0.4; cursor: default; }
   color: var(--text-muted);
 }
 
+/* ---------- blind mode ---------- */
+
+.session-head { flex-wrap: wrap; }
+.session-tools { flex-basis: 100%; display: flex; gap: 8px; }
+#blind-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.blind #live-stats,
+.blind #tally-card,
+.blind #end-chart-card,
+.blind #end-running,
+.blind .score-col { display: none !important; }
+
+.check-label { display: flex; align-items: flex-start; gap: 10px; font-weight: 600; }
+.check-label input { display: inline-block; width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+.check-label .muted { font-weight: 400; }
+
+/* ---------- share dialog ---------- */
+
+#share-dialog {
+  width: min(560px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px;
+}
+#share-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+#share-dialog p { margin: 0 0 12px; font-size: 0.9rem; }
+#share-text {
+  width: 100%;
+  font: 0.85rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  resize: vertical;
+}
+.share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.share-actions .button { text-decoration: none; }
+
