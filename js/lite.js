@@ -3,17 +3,18 @@
 // main app and sent to the coach as plain text (or a data file the coach can
 // import into the main app).
 
-import { createLocalStorage } from './storage.js?v=14';
+import { createLocalStorage } from './storage.js?v=15';
 import {
   ARROW_VALUES, ringClass, isEndOpen, TARGET_SIZES_CM, DISTANCES_M,
   DEFAULT_SETUP, sessionSetup, setupLabel, POSITIONS, POSITION_LABELS, endPosition,
-} from './scoring.js?v=14';
-import * as S from './session.js?v=14';
-import { initTheme } from './theme.js?v=14';
-import { initShareDialog, openShare } from './share.js?v=14';
+} from './scoring.js?v=15';
+import * as S from './session.js?v=15';
+import { initTheme } from './theme.js?v=15';
+import { initShareDialog, openShare } from './share.js?v=15';
 
 const storage = createLocalStorage('archeryProLite');
 const $ = (sel) => document.querySelector(sel);
+const SLOTS_SHOWN = 12; // arrow boxes reserved for the current end
 
 let active = null;
 
@@ -54,7 +55,7 @@ async function render() {
   document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
     b.setAttribute('aria-checked', String(b.dataset.position === S.currentPosition(active))));
 
-  $('#current-end').innerHTML = Array.from({ length: Math.max(3, cur.length + 1) }, (_, i) =>
+  $('#current-end').innerHTML = Array.from({ length: cur.length <= SLOTS_SHOWN ? SLOTS_SHOWN : cur.length + 1 }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
   ).join('');
   $('#undo-btn').disabled = active.ends.length === 0;

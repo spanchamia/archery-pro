@@ -168,17 +168,18 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 .end-label { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px; }
 
-.slots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+/* Room for 12 arrows (two rows of six) is always reserved, so the keypad
+   doesn't move as an end fills up. */
+.slots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 16px; }
 .slot {
-  flex: 1 1 0;
-  min-width: 44px;
-  height: 52px;
+  min-width: 0;
+  height: 44px;
   border-radius: 10px;
   border: 2px dashed var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 700;
 }
 .slot.next { border-color: var(--accent); }

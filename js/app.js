@@ -1,15 +1,16 @@
-import { storage } from './storage.js?v=14';
+import { storage } from './storage.js?v=15';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
   POSITIONS, POSITION_LABELS, endPosition, positionStats,
-} from './scoring.js?v=14';
-import { renderLineChart } from './chart.js?v=14';
-import { initTheme } from './theme.js?v=14';
-import { initShareDialog, openShare } from './share.js?v=14';
-import * as S from './session.js?v=14';
+} from './scoring.js?v=15';
+import { renderLineChart } from './chart.js?v=15';
+import { initTheme } from './theme.js?v=15';
+import { initShareDialog, openShare } from './share.js?v=15';
+import * as S from './session.js?v=15';
 
 const $ = (sel) => document.querySelector(sel);
+const SLOTS_SHOWN = 12; // arrow boxes reserved for the current end
 
 let active = null; // the session currently being scored
 let progressSetup = null; // setup key shown on the Progress tab
@@ -79,15 +80,14 @@ function renderPractice() {
     ['10s (X)', `${st.tens} (${st.xs})`],
   ]);
 
-  // Current end slots: what's been shot plus one empty slot for the next
-  // arrow, never fewer than three so a new end doesn't look empty.
+  // Current end slots: always at least 12, so the keypad stays in place.
   const cur = S.currentEnd(active) || [];
   const endNo = S.currentEnd(active) ? active.ends.length : active.ends.length + 1;
   $('#end-number').textContent = `End ${endNo}`;
   $('#end-running').textContent = cur.length ? `${cur.length} arrow${cur.length === 1 ? '' : 's'} · ${endTotal(cur)} so far` : '';
   document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
     b.setAttribute('aria-checked', String(b.dataset.position === S.currentPosition(active))));
-  $('#current-end').innerHTML = Array.from({ length: Math.max(3, cur.length + 1) }, (_, i) =>
+  $('#current-end').innerHTML = Array.from({ length: cur.length <= SLOTS_SHOWN ? SLOTS_SHOWN : cur.length + 1 }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
   ).join('');
 

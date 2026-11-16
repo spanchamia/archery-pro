@@ -7,7 +7,7 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 ## Features
 
 - Start a practice session with a date, distance (18, 30, 60 or 72 m), target size (40, 60, 80 or 120 cm), target position and optional notes. The last setup you used is pre-selected.
-- Ends can have any number of arrows: tap arrows in, then **End done** (or Enter on a keyboard) to close the end. Undo removes the last arrow and reopens its end.
+- Ends can have any number of arrows: tap arrows in, then **End done** (or Enter on a keyboard) to close the end. The current end has room for 12 arrows without moving the keypad. Undo removes the last arrow and reopens its end.
 - Big tap-friendly keypad coloured like a 10-ring indoor face: X, 10–1 and M (miss). X counts as 10 and is tracked separately.
 - A Tally card under the keypad shows tally marks (in gates of five) and a count for every score from M up to X.
 - Live session stats: average per arrow, average per end, total, arrows shot, ends shot, 10s and Xs.

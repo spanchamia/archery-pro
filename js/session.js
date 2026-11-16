@@ -1,7 +1,7 @@
 // Scoring steps on a session object, shared by the main app and the Lite
 // page. Each function changes the session in place; the caller saves it.
 
-import { isEndOpen, plannedArrows, POSITIONS } from './scoring.js?v=14';
+import { isEndOpen, plannedArrows, POSITIONS } from './scoring.js?v=15';
 
 // Every end is open until the archer taps End done, so ends can have any
 // number of arrows (arrowsPerEnd 0).
