@@ -3,14 +3,14 @@
 // main app and sent to the coach as plain text (or a data file the coach can
 // import into the main app).
 
-import { createLocalStorage } from './storage.js?v=13';
+import { createLocalStorage } from './storage.js?v=14';
 import {
-  ARROW_VALUES, ringClass, plannedArrows, isEndOpen, TARGET_SIZES_CM, DISTANCES_M,
+  ARROW_VALUES, ringClass, isEndOpen, TARGET_SIZES_CM, DISTANCES_M,
   DEFAULT_SETUP, sessionSetup, setupLabel, POSITIONS, POSITION_LABELS, endPosition,
-} from './scoring.js?v=13';
-import * as S from './session.js?v=13';
-import { initTheme } from './theme.js?v=13';
-import { initShareDialog, openShare } from './share.js?v=13';
+} from './scoring.js?v=14';
+import * as S from './session.js?v=14';
+import { initTheme } from './theme.js?v=14';
+import { initShareDialog, openShare } from './share.js?v=14';
 
 const storage = createLocalStorage('archeryProLite');
 const $ = (sel) => document.querySelector(sel);
@@ -48,16 +48,13 @@ async function render() {
   $('#session-title').textContent = longDate(active.date);
   $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes].filter(Boolean).join(' · ');
 
-  const planned = plannedArrows(active);
   const cur = S.currentEnd(active) || [];
   $('#end-number').textContent = `End ${S.currentEnd(active) ? active.ends.length : active.ends.length + 1}`;
   $('#end-count').textContent = cur.length ? plural(cur.length, 'arrow') : '';
-  $('#arrows-select').value = String(planned);
   document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
     b.setAttribute('aria-checked', String(b.dataset.position === S.currentPosition(active))));
 
-  const slotCount = planned ? Math.max(planned, cur.length + (cur.length >= planned ? 0 : 1)) : cur.length + 1;
-  $('#current-end').innerHTML = Array.from({ length: slotCount }, (_, i) =>
+  $('#current-end').innerHTML = Array.from({ length: Math.max(3, cur.length + 1) }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
   ).join('');
   $('#undo-btn').disabled = active.ends.length === 0;
@@ -114,7 +111,6 @@ async function startSession(form) {
   active = S.newSession({
     date: form.date.value || todayISO(),
     notes: form.notes.value.trim(),
-    arrowsPerEnd: Number(form.arrowsPerEnd.value),
     distanceM: Number(form.distanceM.value),
     targetCm: Number(form.targetCm.value),
     position: form.position.value,
@@ -158,6 +154,7 @@ async function init() {
 
   const activeId = await storage.getActiveSessionId();
   if (activeId) active = await storage.getSession(activeId);
+  if (active && S.makeVariable(active)) active = await storage.saveSession(active);
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -172,7 +169,6 @@ async function init() {
   });
   $('#undo-btn').addEventListener('click', () => update(S.undoArrow));
   $('#end-done-btn').addEventListener('click', () => S.currentEnd(active) && update(S.closeEnd));
-  $('#arrows-select').addEventListener('change', (e) => update(S.setPlannedArrows, Number(e.target.value)));
   $('#position-toggle').addEventListener('click', (e) => {
     const pos = e.target.closest('[data-position]')?.dataset.position;
     if (pos) update(S.setPosition, pos);

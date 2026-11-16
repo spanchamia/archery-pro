@@ -6,15 +6,14 @@ It runs entirely in the browser as a static site (GitHub Pages friendly) and kee
 
 ## Features
 
-- Start a practice session with a date, distance (18, 30, 60 or 72 m), target size (40, 60, 80 or 120 cm), arrows per end (3, 6 or varies) and optional notes. The last setup you used is pre-selected.
-- Ends can have any number of arrows. Change the arrows-per-end count at any point during practice, or tap **End done** to close an end early. With "Any", every end stays open until you tap End done.
+- Start a practice session with a date, distance (18, 30, 60 or 72 m), target size (40, 60, 80 or 120 cm), target position and optional notes. The last setup you used is pre-selected.
+- Ends can have any number of arrows: tap arrows in, then **End done** (or Enter on a keyboard) to close the end. Undo removes the last arrow and reopens its end.
 - Big tap-friendly keypad coloured like a 10-ring indoor face: X, 10–1 and M (miss). X counts as 10 and is tracked separately.
-- With a set count, the end fills as you tap and moves on to the next end automatically. Undo removes the last arrow and reopens its end.
 - A Tally card under the keypad shows tally marks (in gates of five) and a count for every score from M up to X.
 - Live session stats: average per arrow, average per end, total, arrows shot, ends shot, 10s and Xs.
 - Each end in the Ends table shows its own average per arrow, and a chart under it plots that average end by end, with a dashed line for the session average. Open any past session from the Progress tab to see its chart.
 - Top / bottom target: pick a target position when starting a session and switch with the **Top target / Bottom target** toggle above the end at any time. Each end remembers where it was shot (shown as T or B in the Ends table).
-- Archery Pro Lite (`lite.html`): a separate page for the archer that only takes raw scores. It has the same setup, keypad, top/bottom toggle and arrows-per-end controls, and lists each end's arrows, but never shows a total, average, tally or graph, before or after the session. Its sessions are stored separately from the main app. When a session is finished it goes straight to sending: share sheet, email, .txt download, copy, or a .json data file the coach can load into the main app with Import backup. Add it to the archer's home screen on its own (it installs as "Archery Lite").
+- Archery Pro Lite (`lite.html`): a separate page for the archer that only takes raw scores. It has the same setup, keypad, top/bottom toggle and End done button, and lists each end's arrows, but never shows a total, average, tally or graph, before or after the session. Its sessions are stored separately from the main app. When a session is finished it goes straight to sending: share sheet, email, .txt download, copy, or a .json data file the coach can load into the main app with Import backup. Add it to the archer's home screen on its own (it installs as "Archery Lite").
 - Share scores: from a session in the main app (or the Share button on the Progress tab), get the raw scores as plain text with the date, distance, target size, top/bottom per end and every arrow. Share it through the phone's share sheet, send it by email, download it as a .txt file, or copy it.
 - Progress tab with a chart of average arrow score per session, overall stats and a list of all sessions you can reopen or delete. Pick a distance and target size combination at the top to see progress for that setup; only setups you've shot appear. Below that, choose **Combined**, **Top** or **Bottom** to see progress for all ends, or only the ends shot on that target. Sessions recorded before positions existed only count towards Combined.
 - Export and import a JSON backup.
@@ -54,7 +53,7 @@ All persistence goes through `js/storage.js`, which exposes an async interface (
 
 ## Data model
 
-`arrowsPerEnd` is the count used for new ends (0 means ends are closed by hand). Each end stores its own arrows, so ends can differ in length. `endOpen` says whether the last end is still being shot. Sessions without `distanceM` / `targetCm` (saved before setups existed) count as 18m / 40cm.
+`arrowsPerEnd` is 0 for all new sessions (ends are closed with End done); older sessions may have a fixed count, which switches to 0 when they're reopened. Each end stores its own arrows, so ends can differ in length. `endOpen` says whether the last end is still being shot. Sessions without `distanceM` / `targetCm` (saved before setups existed) count as 18m / 40cm.
 
 ```json
 {
@@ -64,7 +63,7 @@ All persistence goes through `js/storage.js`, which exposes an async interface (
   "distanceM": 18,
   "targetCm": 40,
   "position": "top",
-  "arrowsPerEnd": 3,
+  "arrowsPerEnd": 0,
   "ends": [["X", "10", "9"], ["10", "9", "8", "7", "9", "10"]],
   "endPositions": ["top", "bottom"],
   "endOpen": false,

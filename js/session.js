@@ -1,14 +1,16 @@
 // Scoring steps on a session object, shared by the main app and the Lite
 // page. Each function changes the session in place; the caller saves it.
 
-import { isEndOpen, plannedArrows, POSITIONS } from './scoring.js?v=13';
+import { isEndOpen, plannedArrows, POSITIONS } from './scoring.js?v=14';
 
-export function newSession({ date, notes = '', arrowsPerEnd, distanceM, targetCm, position, lite = false }) {
+// Every end is open until the archer taps End done, so ends can have any
+// number of arrows (arrowsPerEnd 0).
+export function newSession({ date, notes = '', distanceM, targetCm, position, lite = false }) {
   return {
     id: (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     date,
     notes,
-    arrowsPerEnd,
+    arrowsPerEnd: 0,
     distanceM,
     targetCm,
     position,
@@ -78,10 +80,11 @@ export function setPosition(session, pos) {
   }
 }
 
-// Change how many arrows the coming ends have. An end in progress that
-// already has that many arrows is closed.
-export function setPlannedArrows(session, n) {
-  session.arrowsPerEnd = n;
-  const cur = currentEnd(session);
-  if (cur && n && cur.length >= n) session.endOpen = false;
+// Sessions started when ends had a fixed arrow count switch to variable
+// ends when they're opened again. Returns true if anything changed.
+export function makeVariable(session) {
+  if (!plannedArrows(session)) return false;
+  session.endOpen = isEndOpen(session);
+  session.arrowsPerEnd = 0;
+  return true;
 }

@@ -19,7 +19,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=13">
+  <link rel="stylesheet" href="css/styles.css?v=14">
 </head>
 <body>
   <header class="app-header">
@@ -55,13 +55,6 @@
             <option value="bottom">Bottom</option>
           </select>
         </label>
-        <label>Arrows per end
-          <select name="arrowsPerEnd">
-            <option value="3" selected>3</option>
-            <option value="6">6</option>
-            <option value="0">Varies (tap End done after each end)</option>
-          </select>
-        </label>
         <label>Notes <span class="muted">(optional)</span>
           <input type="text" name="notes" placeholder="e.g. triple spot, new arrows" maxlength="80">
         </label>
@@ -94,19 +87,8 @@
           <div id="keypad" class="keypad"></div>
           <div class="keypad-actions">
             <button id="undo-btn" class="secondary">↶ Undo</button>
-            <button id="end-done-btn" class="secondary">End done ✓</button>
+            <button id="end-done-btn" class="primary">End done ✓</button>
           </div>
-          <label class="inline-select">Arrows per end
-            <select id="arrows-select">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="0">Any (End done)</option>
-            </select>
-          </label>
         </div>
 
         <div class="card" id="tally-card">
@@ -184,7 +166,7 @@
     <button id="share-close" class="primary" type="button">Done</button>
   </dialog>
 
-  <script type="module" src="js/app.js?v=13"></script>
+  <script type="module" src="js/app.js?v=14"></script>
   <script>
     // Keep a copy of the app on the device so it works offline.
     if ('serviceWorker' in navigator) {

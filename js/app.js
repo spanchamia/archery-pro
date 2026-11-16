@@ -1,13 +1,13 @@
-import { storage } from './storage.js?v=13';
+import { storage } from './storage.js?v=14';
 import {
-  ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen, plannedArrows,
+  ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
   POSITIONS, POSITION_LABELS, endPosition, positionStats,
-} from './scoring.js?v=13';
-import { renderLineChart } from './chart.js?v=13';
-import { initTheme } from './theme.js?v=13';
-import { initShareDialog, openShare } from './share.js?v=13';
-import * as S from './session.js?v=13';
+} from './scoring.js?v=14';
+import { renderLineChart } from './chart.js?v=14';
+import { initTheme } from './theme.js?v=14';
+import { initShareDialog, openShare } from './share.js?v=14';
+import * as S from './session.js?v=14';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -43,10 +43,6 @@ function positionBadge(pos) {
   return pos ? `<span class="pos-badge pos-${pos}" title="${POSITION_LABELS[pos]}">${POSITION_LABELS[pos][0]}</span>` : '';
 }
 
-function arrowsLabel(n) {
-  return n ? `${n} arrow${n === 1 ? '' : 's'} per end` : 'Arrows per end vary';
-}
-
 async function persist() {
   active = await storage.saveSession(active);
 }
@@ -71,7 +67,7 @@ function renderPractice() {
   }
 
   $('#session-title').textContent = longDate(active.date);
-  $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes || arrowsLabel(plannedArrows(active))].join(' · ');
+  $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes].filter(Boolean).join(' · ');
 
   const st = sessionStats(active);
   $('#live-stats').innerHTML = statTiles([
@@ -83,18 +79,15 @@ function renderPractice() {
     ['10s (X)', `${st.tens} (${st.xs})`],
   ]);
 
-  // Current end slots. With a planned count, show that many slots; otherwise
-  // show what's been shot plus one empty slot for the next arrow.
-  const planned = plannedArrows(active);
+  // Current end slots: what's been shot plus one empty slot for the next
+  // arrow, never fewer than three so a new end doesn't look empty.
   const cur = S.currentEnd(active) || [];
   const endNo = S.currentEnd(active) ? active.ends.length : active.ends.length + 1;
   $('#end-number').textContent = `End ${endNo}`;
   $('#end-running').textContent = cur.length ? `${cur.length} arrow${cur.length === 1 ? '' : 's'} · ${endTotal(cur)} so far` : '';
-  $('#arrows-select').value = String(planned);
   document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
     b.setAttribute('aria-checked', String(b.dataset.position === S.currentPosition(active))));
-  const slotCount = planned ? Math.max(planned, cur.length + (cur.length >= planned ? 0 : 1)) : cur.length + 1;
-  $('#current-end').innerHTML = Array.from({ length: slotCount }, (_, i) =>
+  $('#current-end').innerHTML = Array.from({ length: Math.max(3, cur.length + 1) }, (_, i) =>
     cur[i] ? `<span class="slot filled ${ringClass(cur[i])}">${cur[i]}</span>` : `<span class="slot${i === cur.length ? ' next' : ''}"></span>`
   ).join('');
 
@@ -261,7 +254,6 @@ async function addArrow(value) {
 
 const undo = () => update(S.undoArrow);
 const setPosition = (pos) => update(S.setPosition, pos);
-const setPlannedArrows = (n) => update(S.setPlannedArrows, n);
 
 async function endDone() {
   if (S.currentEnd(active)) await update(S.closeEnd);
@@ -302,7 +294,6 @@ async function startSession(form) {
   active = S.newSession({
     date: form.date.value || todayISO(),
     notes: form.notes.value.trim(),
-    arrowsPerEnd: Number(form.arrowsPerEnd.value),
     distanceM: Number(form.distanceM.value),
     targetCm: Number(form.targetCm.value),
     position: form.position.value,
@@ -319,6 +310,7 @@ async function resumeSession(id) {
   }
   active = await storage.getSession(id);
   if (!active) return;
+  S.makeVariable(active);
   active.completed = false;
   await persist();
   await storage.setActiveSessionId(id);
@@ -373,6 +365,7 @@ async function init() {
 
   const activeId = await storage.getActiveSessionId();
   if (activeId) active = await storage.getSession(activeId);
+  if (active && S.makeVariable(active)) await persist();
 
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => showView(t.dataset.view)));
   $('#start-form').addEventListener('submit', (e) => {
@@ -385,7 +378,6 @@ async function init() {
   });
   $('#undo-btn').addEventListener('click', undo);
   $('#end-done-btn').addEventListener('click', endDone);
-  $('#arrows-select').addEventListener('change', (e) => setPlannedArrows(Number(e.target.value)));
   $('#finish-btn').addEventListener('click', finishSession);
   initShareDialog();
   $('#share-btn').addEventListener('click', () => openShare(active, longDate(active.date)));
