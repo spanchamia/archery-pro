@@ -1,16 +1,17 @@
 // Archery Pro Lite: the archer enters raw scores end by end and never sees
-// a total, average, tally or graph. Sessions are kept separately from the
+// a total, average or graph (the tally is folded away until tapped). Sessions are kept separately from the
 // main app and sent to the coach as plain text (or a data file the coach can
 // import into the main app).
 
-import { createLocalStorage } from './storage.js?v=15';
+import { createLocalStorage } from './storage.js?v=16';
 import {
   ARROW_VALUES, ringClass, isEndOpen, TARGET_SIZES_CM, DISTANCES_M,
   DEFAULT_SETUP, sessionSetup, setupLabel, POSITIONS, POSITION_LABELS, endPosition,
-} from './scoring.js?v=15';
-import * as S from './session.js?v=15';
-import { initTheme } from './theme.js?v=15';
-import { initShareDialog, openShare } from './share.js?v=15';
+} from './scoring.js?v=16';
+import * as S from './session.js?v=16';
+import { tallyRows } from './tally.js?v=16';
+import { initTheme } from './theme.js?v=16';
+import { initShareDialog, openShare } from './share.js?v=16';
 
 const storage = createLocalStorage('archeryProLite');
 const $ = (sel) => document.querySelector(sel);
@@ -72,6 +73,11 @@ async function render() {
     </tr>`;
   }).reverse().join('');
   $('#ends-empty').hidden = active.ends.length > 0;
+
+  // Tally stays folded away unless the archer opens it.
+  const total = active.ends.flat().length;
+  $('#tally-total').textContent = total ? plural(total, 'arrow') : '';
+  $('#tally').innerHTML = tallyRows(active);
 }
 
 async function renderStart() {
@@ -119,6 +125,7 @@ async function startSession(form) {
   });
   active = await storage.saveSession(active);
   await storage.setActiveSessionId(active.id);
+  $('#tally-card').open = false;
   form.notes.value = '';
   render();
 }

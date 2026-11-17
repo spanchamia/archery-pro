@@ -316,6 +316,12 @@ button:disabled { opacity: 0.4; cursor: default; }
 .tally-row.zero .tally-count { color: var(--text-muted); opacity: 0.6; }
 .tally-marks { display: flex; flex-wrap: wrap; gap: 4px 6px; min-width: 0; }
 .tally-group { stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; flex: none; }
+.tally-details > summary { cursor: pointer; list-style: none; gap: 8px; }
+.tally-details > summary::-webkit-details-marker { display: none; }
+.tally-details > summary h3 { margin: 0; }
+.tally-details > summary h3::before { content: '▸'; display: inline-block; width: 1.1em; transition: transform 0.15s; }
+.tally-details[open] > summary h3::before { transform: rotate(90deg); }
+.tally-details[open] > summary { margin-bottom: 8px; }
 .tally-count { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
 
 /* ---------- target position (top / bottom) ---------- */

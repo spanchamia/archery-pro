@@ -1,13 +1,14 @@
-import { storage } from './storage.js?v=15';
+import { storage } from './storage.js?v=16';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
   POSITIONS, POSITION_LABELS, endPosition, positionStats,
-} from './scoring.js?v=15';
-import { renderLineChart } from './chart.js?v=15';
-import { initTheme } from './theme.js?v=15';
-import { initShareDialog, openShare } from './share.js?v=15';
-import * as S from './session.js?v=15';
+} from './scoring.js?v=16';
+import { renderLineChart } from './chart.js?v=16';
+import { initTheme } from './theme.js?v=16';
+import { initShareDialog, openShare } from './share.js?v=16';
+import * as S from './session.js?v=16';
+import { tallyRows } from './tally.js?v=16';
 
 const $ = (sel) => document.querySelector(sel);
 const SLOTS_SHOWN = 12; // arrow boxes reserved for the current end
@@ -115,30 +116,10 @@ function renderPractice() {
   renderEndChart(st);
 }
 
-// Tally marks for every score value in the session, drawn in gates of five.
-function tallyMarks(n) {
-  const stroke = (x) => `<line x1="${x}" y1="3" x2="${x}" y2="21"/>`;
-  const group = (count) => {
-    const lines = Array.from({ length: Math.min(count, 4) }, (_, i) => stroke(4 + i * 6)).join('');
-    const gate = count === 5 ? '<line x1="0" y1="18" x2="26" y2="6"/>' : '';
-    return `<svg class="tally-group" viewBox="0 0 26 24" width="26" height="24" aria-hidden="true">${lines}${gate}</svg>`;
-  };
-  const groups = [];
-  for (let left = n; left > 0; left -= 5) groups.push(group(Math.min(left, 5)));
-  return groups.join('');
-}
-
 function renderTally() {
-  const counts = Object.fromEntries(ARROW_VALUES.map((v) => [v, 0]));
-  for (const a of active.ends.flat()) counts[a] += 1;
   const total = active.ends.flat().length;
   $('#tally-total').textContent = `${total} arrow${total === 1 ? '' : 's'}`;
-  // Lowest score first: M, 1, 2 … 10, X.
-  $('#tally').innerHTML = [...ARROW_VALUES].reverse().map((v) => `<div class="tally-row${counts[v] ? '' : ' zero'}">
-      <span class="chip ${ringClass(v)}">${v}</span>
-      <span class="tally-marks" aria-label="${counts[v]} × ${v === 'M' ? 'miss' : v}">${tallyMarks(counts[v])}</span>
-      <span class="tally-count">${counts[v]}</span>
-    </div>`).join('');
+  $('#tally').innerHTML = tallyRows(active);
 }
 
 // End-by-end chart for the open session: average arrow score of each
