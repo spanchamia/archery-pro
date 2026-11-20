@@ -27,7 +27,8 @@ function shortDate(iso) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-// points: [{ date: 'YYYY-MM-DD', value: Number, label: String }]
+// points: [{ date: 'YYYY-MM-DD', value: Number, label: String, note: String }]
+// A point with a note gets a ring and a small flag above the plot.
 // options:
 //   xLabel(point, i)  axis / tooltip text for a point (default: short date)
 //   unit              text after the value in the tooltip
@@ -94,6 +95,12 @@ export function renderLineChart(container, points, options = {}) {
   // Line and dots.
   const d = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ');
   el('path', { d, class: 'series-line' }, svg);
+  points.forEach((p, i) => {
+    if (!p.note) return;
+    el('line', { x1: x(i), x2: x(i), y1: m.top - 6, y2: y(p.value) - 8, class: 'note-line' }, svg);
+    el('path', { d: `M${x(i)},${m.top - 14} l0,8 l7,-4 z`, class: 'note-flag' }, svg);
+    el('circle', { cx: x(i), cy: y(p.value), r: 8, class: 'note-ring' }, svg);
+  });
   const dots = points.map((p, i) => el('circle', { cx: x(i), cy: y(p.value), r: 4, class: 'series-dot' }, svg));
 
   // Direct label on the latest point.
@@ -120,7 +127,7 @@ export function renderLineChart(container, points, options = {}) {
     crosshair.setAttribute('x2', x(best));
     crosshair.setAttribute('visibility', 'visible');
     dots.forEach((dot, i) => dot.setAttribute('r', i === best ? 6 : 4));
-    tooltip.innerHTML = `<strong>${p.value.toFixed(2)}</strong> ${unit}<br>${xLabel(p, best)}${p.label ? ` · ${escapeHtml(p.label)}` : ''}`;
+    tooltip.innerHTML = `<strong>${p.value.toFixed(2)}</strong> ${unit}<br>${xLabel(p, best)}${p.label ? ` · ${escapeHtml(p.label)}` : ''}${p.note ? `<span class="tooltip-note">${escapeHtml(p.note)}</span>` : ''}`;
     tooltip.hidden = false;
     const left = (x(best) / width) * rect.width;
     tooltip.style.left = `${Math.min(Math.max(left, 70), rect.width - 70)}px`;

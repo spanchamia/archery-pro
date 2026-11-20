@@ -1,14 +1,14 @@
-import { storage } from './storage.js?v=16';
+import { storage } from './storage.js?v=17';
 import {
   ARROW_VALUES, endTotal, sessionStats, ringClass, fmt, isEndOpen,
   TARGET_SIZES_CM, DISTANCES_M, DEFAULT_SETUP, sessionSetup, setupKey, setupLabel,
   POSITIONS, POSITION_LABELS, endPosition, positionStats,
-} from './scoring.js?v=16';
-import { renderLineChart } from './chart.js?v=16';
-import { initTheme } from './theme.js?v=16';
-import { initShareDialog, openShare } from './share.js?v=16';
-import * as S from './session.js?v=16';
-import { tallyRows } from './tally.js?v=16';
+} from './scoring.js?v=17';
+import { renderLineChart } from './chart.js?v=17';
+import { initTheme } from './theme.js?v=17';
+import { initShareDialog, openShare } from './share.js?v=17';
+import * as S from './session.js?v=17';
+import { tallyRows } from './tally.js?v=17';
 
 const $ = (sel) => document.querySelector(sel);
 const SLOTS_SHOWN = 12; // arrow boxes reserved for the current end
@@ -70,6 +70,7 @@ function renderPractice() {
 
   $('#session-title').textContent = longDate(active.date);
   $('#session-notes').textContent = [setupLabel(sessionSetup(active)), active.notes].filter(Boolean).join(' · ');
+  $('#session-note-btn').textContent = active.notes ? 'Edit session notes' : '＋ Session notes';
 
   const st = sessionStats(active);
   $('#live-stats').innerHTML = statTiles([
@@ -85,6 +86,10 @@ function renderPractice() {
   const cur = S.currentEnd(active) || [];
   const endNo = S.currentEnd(active) ? active.ends.length : active.ends.length + 1;
   $('#end-number').textContent = `End ${endNo}`;
+  const curNote = S.endNote(active, S.noteIndex(active));
+  $('#current-note').hidden = !curNote;
+  $('#current-note').textContent = curNote ? `📝 ${curNote}` : '';
+  $('#end-note-btn').textContent = curNote ? 'Edit end note' : '＋ End note';
   $('#end-running').textContent = cur.length ? `${cur.length} arrow${cur.length === 1 ? '' : 's'} · ${endTotal(cur)} so far` : '';
   document.querySelectorAll('#position-toggle [data-position]').forEach((b) =>
     b.setAttribute('aria-checked', String(b.dataset.position === S.currentPosition(active))));
@@ -100,13 +105,17 @@ function renderPractice() {
   const openIndex = isEndOpen(active) ? active.ends.length - 1 : -1;
   const rows = active.ends.map((end, i) => {
     running += endTotal(end);
-    return `<tr class="${i === openIndex ? 'partial' : ''}">
+    const note = S.endNote(active, i);
+    const noteRow = note
+      ? `<tr class="note-row"><td></td><td colspan="5"><button type="button" class="note-chip" data-edit-note="${i}">📝 ${escapeHtml(note)}</button></td></tr>`
+      : '';
+    return `${noteRow}<tr class="${i === openIndex ? 'partial' : ''}${note ? ' has-note' : ''}">
       <td>${i + 1}${positionBadge(endPosition(active, i))}</td>
       <td class="chips">${end.map(chip).join('')}</td>
       <td class="num score-col">${endTotal(end)}</td>
       <td class="num score-col">${fmt(endTotal(end) / end.length)}</td>
       <td class="num muted score-col">${running}</td>
-      <td><button class="icon-btn" data-delete-end="${i}" aria-label="Delete end ${i + 1}">✕</button></td>
+      <td class="end-actions"><button class="icon-btn note-btn" data-edit-note="${i}" aria-label="Note on end ${i + 1}">✎</button><button class="icon-btn" data-delete-end="${i}" aria-label="Delete end ${i + 1}">✕</button></td>
     </tr>`;
   });
   $('#ends-body').innerHTML = rows.reverse().join('');
@@ -128,7 +137,7 @@ function renderEndChart(st) {
   const finished = isEndOpen(active) ? active.ends.slice(0, -1) : active.ends;
   const points = finished.map((end, i) => {
     const pos = endPosition(active, i);
-    return { end: i + 1, value: endTotal(end) / end.length, label: pos ? POSITION_LABELS[pos] : '' };
+    return { end: i + 1, value: endTotal(end) / end.length, label: pos ? POSITION_LABELS[pos] : '', note: S.endNote(active, i) };
   });
   $('#end-chart-card').hidden = points.length === 0;
   if (!points.length || $('#view-practice').hidden) return;
@@ -187,7 +196,7 @@ async function renderHistory() {
 
   renderLineChart(
     $('#chart'),
-    withStats.map(({ s, st }) => ({ date: s.date, value: st.avgArrow, label: s.notes || '' })),
+    withStats.map(({ s, st }) => ({ date: s.date, value: st.avgArrow, note: sessionNoteSummary(s) })),
     {
       emptyText: progressPosition === 'all'
         ? 'Finish a session to see your progress here.'
@@ -202,7 +211,8 @@ async function renderHistory() {
     .map(({ s, st, setup }) => `<li class="session-item">
       <div class="session-main">
         <strong>${longDate(s.date)}</strong>${s.id === active?.id ? ' <span class="badge">in progress</span>' : ''}
-        <span class="muted">${setupLabel(setup)} · ${s.notes ? `${escapeHtml(s.notes)} · ` : ''}${st.ends} end${st.ends === 1 ? '' : 's'} · ${st.arrows} arrows</span>
+        <span class="muted">${setupLabel(setup)} · ${st.ends} end${st.ends === 1 ? '' : 's'} · ${st.arrows} arrows</span>
+        ${noteLines(s)}
       </div>
       <div class="session-score">
         <span class="stat-value">${fmt(st.avgArrow)}</span>
@@ -217,6 +227,21 @@ async function renderHistory() {
       </div>
     </li>`)
     .join('');
+}
+
+// Session notes plus each end note, for the Progress chart tooltip.
+function sessionNoteSummary(s) {
+  const ends = (s.endNotes || []).map((n, i) => (n && s.ends[i]?.length ? `End ${i + 1}: ${n}` : '')).filter(Boolean);
+  return [s.notes, ...ends].filter(Boolean).join(' · ');
+}
+
+function noteLines(s) {
+  const lines = [];
+  if (s.notes) lines.push(`<span class="session-note">📝 ${escapeHtml(s.notes)}</span>`);
+  (s.endNotes || []).forEach((n, i) => {
+    if (n && s.ends[i]?.length) lines.push(`<span class="session-note"><span class="muted">End ${i + 1}:</span> ${escapeHtml(n)}</span>`);
+  });
+  return lines.join('');
 }
 
 // ---------- actions ----------
@@ -242,6 +267,30 @@ async function endDone() {
 
 async function deleteEnd(index) {
   if (confirm(`Delete end ${index + 1}?`)) await update(S.deleteEnd, index);
+}
+
+// One dialog for both kinds of note. target is 'session' or an end index.
+let noteTarget = null;
+
+function openNote(target) {
+  noteTarget = target;
+  const isSession = target === 'session';
+  const endNo = isSession ? 0 : target + 1;
+  const shot = !isSession && target < active.ends.length;
+  $('#note-title').textContent = isSession ? 'Session notes' : `Note on end ${endNo}`;
+  $('#note-hint').textContent = isSession
+    ? 'What you are working on in this session.'
+    : shot ? 'Something you changed or noticed on this end.' : 'Something you are changing from this end on. It is saved with the next end you shoot.';
+  $('#note-text').value = isSession ? active.notes || '' : S.endNote(active, target);
+  $('#note-dialog').showModal();
+  $('#note-text').focus();
+}
+
+async function saveNote() {
+  const text = $('#note-text').value.trim();
+  if (noteTarget === 'session') await update(S.setSessionNotes, text);
+  else if (noteTarget !== null) await update(S.setEndNote, noteTarget, text);
+  noteTarget = null;
 }
 
 async function finishSession() {
@@ -361,6 +410,11 @@ async function init() {
   $('#end-done-btn').addEventListener('click', endDone);
   $('#finish-btn').addEventListener('click', finishSession);
   initShareDialog();
+  $('#end-note-btn').addEventListener('click', () => openNote(S.noteIndex(active)));
+  $('#current-note').addEventListener('click', () => openNote(S.noteIndex(active)));
+  $('#session-note-btn').addEventListener('click', () => openNote('session'));
+  $('#note-cancel').addEventListener('click', () => $('#note-dialog').close());
+  $('#note-form').addEventListener('submit', () => saveNote());
   $('#share-btn').addEventListener('click', () => openShare(active, longDate(active.date)));
   $('#position-toggle').addEventListener('click', (e) => {
     const pos = e.target.closest('[data-position]')?.dataset.position;
@@ -375,7 +429,9 @@ async function init() {
   });
   $('#ends-body').addEventListener('click', (e) => {
     const i = e.target.closest('[data-delete-end]')?.dataset.deleteEnd;
+    const n = e.target.closest('[data-edit-note]')?.dataset.editNote;
     if (i !== undefined) deleteEnd(Number(i));
+    if (n !== undefined) openNote(Number(n));
   });
   $('#session-list').addEventListener('click', (e) => {
     const resume = e.target.closest('[data-resume]')?.dataset.resume;
@@ -401,7 +457,7 @@ async function init() {
   // Keyboard scoring on desktop: digits, 0 for 10, x, m, Enter to finish
   // the end, Backspace to undo.
   document.addEventListener('keydown', (e) => {
-    if (!active || $('#view-practice').hidden || $('#share-dialog').open || e.target.matches('input, select, textarea')) return;
+    if (!active || $('#view-practice').hidden || $('#share-dialog').open || $('#note-dialog').open || e.target.matches('input, select, textarea')) return;
     const k = e.key.toLowerCase();
     if (k === 'x') addArrow('X');
     else if (k === 'm') addArrow('M');

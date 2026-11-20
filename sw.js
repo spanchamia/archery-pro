@@ -3,7 +3,7 @@
 // refreshed in the background whenever the device is online, so updates
 // show up on the next launch.
 
-const CACHE = 'archery-pro-v16';
+const CACHE = 'archery-pro-v17';
 const APP_FILES = [
   './',
   'index.html',

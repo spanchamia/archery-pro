@@ -3,15 +3,15 @@
 // main app and sent to the coach as plain text (or a data file the coach can
 // import into the main app).
 
-import { createLocalStorage } from './storage.js?v=16';
+import { createLocalStorage } from './storage.js?v=17';
 import {
   ARROW_VALUES, ringClass, isEndOpen, TARGET_SIZES_CM, DISTANCES_M,
   DEFAULT_SETUP, sessionSetup, setupLabel, POSITIONS, POSITION_LABELS, endPosition,
-} from './scoring.js?v=16';
-import * as S from './session.js?v=16';
-import { tallyRows } from './tally.js?v=16';
-import { initTheme } from './theme.js?v=16';
-import { initShareDialog, openShare } from './share.js?v=16';
+} from './scoring.js?v=17';
+import * as S from './session.js?v=17';
+import { tallyRows } from './tally.js?v=17';
+import { initTheme } from './theme.js?v=17';
+import { initShareDialog, openShare } from './share.js?v=17';
 
 const storage = createLocalStorage('archeryProLite');
 const $ = (sel) => document.querySelector(sel);

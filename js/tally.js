@@ -1,7 +1,7 @@
 // Tally marks for every score value in a session, drawn in gates of five.
 // Shared by the main app and the Lite page.
 
-import { ARROW_VALUES, ringClass } from './scoring.js?v=16';
+import { ARROW_VALUES, ringClass } from './scoring.js?v=17';
 
 function tallyMarks(n) {
   const stroke = (x) => `<line x1="${x}" y1="3" x2="${x}" y2="21"/>`;

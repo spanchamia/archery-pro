@@ -19,7 +19,7 @@
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=16">
+  <link rel="stylesheet" href="css/styles.css?v=17">
 </head>
 <body>
   <header class="app-header">
@@ -70,6 +70,8 @@
           </div>
           <button id="finish-btn" class="secondary">Finish</button>
           <div class="session-tools">
+            <button id="end-note-btn" class="secondary small" type="button">＋ End note</button>
+            <button id="session-note-btn" class="secondary small" type="button">Session notes</button>
             <button id="share-btn" class="secondary small" type="button">Share scores</button>
           </div>
         </div>
@@ -79,6 +81,7 @@
             <span id="end-number"></span>
             <span id="end-running" class="muted"></span>
           </div>
+          <button id="current-note" class="current-note" type="button" hidden></button>
           <div id="position-toggle" class="segmented" role="radiogroup" aria-label="Target position">
             <button type="button" role="radio" data-position="top">Top target</button>
             <button type="button" role="radio" data-position="bottom">Bottom target</button>
@@ -153,6 +156,18 @@
     </section>
   </main>
 
+  <dialog id="note-dialog" aria-labelledby="note-title">
+    <form method="dialog" id="note-form">
+      <h2 id="note-title">Note</h2>
+      <p id="note-hint" class="muted"></p>
+      <textarea id="note-text" rows="3" maxlength="200" placeholder="e.g. relaxed bow hand, new anchor point"></textarea>
+      <div class="note-actions">
+        <button id="note-cancel" class="secondary" type="button">Cancel</button>
+        <button class="primary" type="submit" value="save">Save note</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="share-dialog" aria-labelledby="share-title">
     <h2 id="share-title">Raw scores</h2>
     <p class="muted">Send these to your coach, or save them as a text file.</p>
@@ -166,7 +181,7 @@
     <button id="share-close" class="primary" type="button">Done</button>
   </dialog>
 
-  <script type="module" src="js/app.js?v=16"></script>
+  <script type="module" src="js/app.js?v=17"></script>
   <script>
     // Keep a copy of the app on the device so it works offline.
     if ('serviceWorker' in navigator) {

@@ -1,7 +1,7 @@
 // Scoring steps on a session object, shared by the main app and the Lite
 // page. Each function changes the session in place; the caller saves it.
 
-import { isEndOpen, plannedArrows, POSITIONS } from './scoring.js?v=16';
+import { isEndOpen, plannedArrows, POSITIONS } from './scoring.js?v=17';
 
 // Every end is open until the archer taps End done, so ends can have any
 // number of arrows (arrowsPerEnd 0).
@@ -17,6 +17,7 @@ export function newSession({ date, notes = '', distanceM, targetCm, position, li
     lite,
     ends: [],
     endPositions: [],
+    endNotes: [],
     endOpen: false,
     completed: false,
     createdAt: new Date().toISOString(),
@@ -56,6 +57,8 @@ export function undoArrow(session) {
   else {
     session.ends.pop();
     if (session.endPositions) session.endPositions.length = Math.min(session.endPositions.length, session.ends.length);
+    // A note on the removed end stays put for the next end shot in its place.
+    if (session.endNotes) session.endNotes.length = Math.min(session.endNotes.length, session.ends.length + 1);
     session.endOpen = false;
   }
 }
@@ -64,10 +67,33 @@ export function deleteEnd(session, index) {
   if (index === session.ends.length - 1) session.endOpen = false;
   session.ends.splice(index, 1);
   if (session.endPositions) session.endPositions.splice(index, 1);
+  if (session.endNotes) session.endNotes.splice(index, 1);
 }
 
 export function closeEnd(session) {
   session.endOpen = false;
+}
+
+// Index of the end a new note belongs to: the end being shot, or the next
+// one if no end is open.
+export function noteIndex(session) {
+  return currentEnd(session) ? session.ends.length - 1 : session.ends.length;
+}
+
+export function endNote(session, index) {
+  return (session.endNotes && session.endNotes[index]) || '';
+}
+
+// Set (or clear, with an empty string) the note on one end.
+export function setEndNote(session, index, text) {
+  session.endNotes = session.endNotes || [];
+  while (session.endNotes.length < index) session.endNotes.push('');
+  session.endNotes[index] = text;
+  while (session.endNotes.length && !session.endNotes[session.endNotes.length - 1]) session.endNotes.pop();
+}
+
+export function setSessionNotes(session, text) {
+  session.notes = text;
 }
 
 // Switch between the top and bottom target. Applies to the end being shot

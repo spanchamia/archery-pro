@@ -1,7 +1,7 @@
 // Plain-text export of a session's raw scores for sending to a coach, and the
 // share dialog both pages use to send it.
 
-import { POSITION_LABELS, endPosition, sessionSetup } from './scoring.js?v=16';
+import { POSITION_LABELS, endPosition, sessionSetup } from './scoring.js?v=17';
 
 export function rawScoresText(session, dateLabel) {
   const { distanceM, targetCm } = sessionSetup(session);
@@ -20,6 +20,8 @@ export function rawScoresText(session, dateLabel) {
     if (!end.length) return;
     const pos = endPosition(session, i);
     lines.push(`End ${i + 1}${pos ? ` (${POSITION_LABELS[pos]})` : ''}: ${end.join(', ')}`);
+    const note = session.endNotes && session.endNotes[i];
+    if (note) lines.push(`  Note: ${note}`);
   });
   const arrows = ends.reduce((n, e) => n + e.length, 0);
   lines.push('', `${arrows} arrow${arrows === 1 ? '' : 's'} in ${ends.length} end${ends.length === 1 ? '' : 's'}`);
